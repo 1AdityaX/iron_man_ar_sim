@@ -126,8 +126,16 @@ export class LabelLayer {
       }
     }
 
-    for (const e of this.entries.values()) {
+    for (const [key, e] of this.entries) {
       const show = e.opacity > 0.02;
+      if (!show && !e.spec) {
+        e.el.remove();
+        e.path.remove();
+        e.dot.remove();
+        e.ring.remove();
+        this.entries.delete(key);
+        continue;
+      }
       e.el.style.display = show ? '' : 'none';
       const lineShown = show && !!e.spec;
       e.path.style.display = e.dot.style.display = e.ring.style.display = lineShown ? '' : 'none';
