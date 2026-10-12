@@ -463,9 +463,11 @@ export class InteractionController {
   buildLabels(layer: LabelLayer): void {
     const { labels } = this.d.settings();
     const W = this.d.vp.width;
+    // An open menu covers whatever is under it; those callouts wait until it closes.
+    const underMenu = (p: Vec2) => this.d.menu.contains(p.x, p.y);
     if (labels) {
       for (const c of this.ctls) {
-        if (!c.hand.present) continue;
+        if (!c.hand.present || underMenu(c.hand.palmScreen)) continue;
         const { title, rows } = this.handLabel(c);
         layer.put({ key: `hand-${c.key}`, anchor: c.hand.palmScreen, title, rows, variant: 'hand' });
       }
@@ -473,9 +475,14 @@ export class InteractionController {
       for (const obj of this.d.objects.live) {
         this.d.objects.screenCircle(obj, circle);
         const dir = circle.x < W / 2 ? -1 : 1;
+        const anchor = { x: circle.x + dir * circle.r * 0.62, y: circle.y - circle.r * 0.62 };
+        if (underMenu(anchor)) continue;
+        // Keep the callout off the hologram itself (its inner 80% at least).
+        const inset = circle.r * 0.8;
         layer.put({
           key: `obj-${obj.id}`,
-          anchor: { x: circle.x + dir * circle.r * 0.62, y: circle.y - circle.r * 0.62 },
+          anchor,
+          avoid: { x: circle.x - inset, y: circle.y - inset, w: inset * 2, h: inset * 2 },
           title: obj.title,
           rows: [
             ['STATUS', obj.state],

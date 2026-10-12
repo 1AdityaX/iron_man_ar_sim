@@ -114,10 +114,11 @@ export class App {
       document.getElementById('label-layer')!,
       document.getElementById('leader-layer') as unknown as SVGSVGElement,
     );
-    this.labels.keepOut = () => this.keepOut;
+    this.labels.keepOut = () => (this.menu.open ? [...this.keepOut, this.menu.footprint] : this.keepOut);
     this.hud.onLayout = () => this.cacheLayout();
     this.menu = new RadialMenu(document.getElementById('menu-layer')!, (id) => this.ctl.onMenuSelect(id));
     this.menu.avoid = () => this.hud.controlsRect;
+    this.menu.floor = () => this.helpTop;
     this.debug = new DebugOverlay(document.getElementById('debug-layer') as HTMLCanvasElement);
     this.start = new StartScreen(
       () => void this.startCamera(),

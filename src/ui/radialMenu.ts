@@ -41,6 +41,8 @@ export class RadialMenu {
   hovered: string | null = null;
   /** Screen rectangle the menu must not cover (the control panel). */
   avoid: (() => DOMRect | null) | null = null;
+  /** Screen y the menu stays above when there's room (the gesture guide). */
+  floor: (() => number) | null = null;
 
   private readonly el: HTMLDivElement;
   private readonly svgEl: SVGSVGElement;
@@ -67,14 +69,15 @@ export class RadialMenu {
     this.inner = small ? 50 : 64;
     this.outer = small ? 100 : 126;
     const reach = this.outer + 26;
+    const floor = Math.max(reach * 2, Math.min(window.innerHeight, this.floor?.() ?? Infinity));
     this.x = clamp(x, reach, window.innerWidth - reach);
-    this.y = clamp(y, reach, window.innerHeight - reach);
+    this.y = clamp(y, reach, floor - reach);
     const r = this.avoid?.();
     if (r && this.x + reach > r.left - 8 && this.y - reach < r.bottom + 8) {
       // Slide clear of the control panel, whichever way is the shorter move.
       const down = r.bottom + 8 - (this.y - reach);
       const left = this.x + reach - (r.left - 8);
-      if (down <= left && this.y + down <= window.innerHeight - reach) this.y += down;
+      if (down <= left && this.y + down <= floor - reach) this.y += down;
       else this.x = Math.max(reach, this.x - left);
     }
     this.owner = owner;
@@ -112,6 +115,12 @@ export class RadialMenu {
     // Sector i is centred on -90° + i·step (clockwise from the top, as on screen).
     const rel = (((Math.atan2(dy, dx) + Math.PI / 2 + step / 2) % TAU) + TAU) % TAU;
     return this.sectors[Math.floor(rel / step) % this.sectors.length].opt.id;
+  }
+
+  /** Screen box around the open menu, for callouts to keep clear of. */
+  get footprint(): { x: number; y: number; w: number; h: number } {
+    const r = this.outer + 34;
+    return { x: this.x - r, y: this.y - r, w: r * 2, h: r * 2 };
   }
 
   /** True if the point is within the menu's overall footprint. */

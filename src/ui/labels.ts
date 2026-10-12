@@ -10,6 +10,8 @@ export interface LabelSpec {
   /** Which side of the anchor the callout sits on; 'auto' points outward from screen centre. */
   side?: 'left' | 'right' | 'auto';
   variant?: 'hand' | 'object' | 'info';
+  /** The described thing's own footprint, which the callout should not cover. */
+  avoid?: Rect;
 }
 
 export interface Rect {
@@ -43,6 +45,9 @@ const MARGIN = 14;
 const GAP = 6;
 
 const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+const overlapArea = (a: Rect, b: Rect) =>
+  Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
+  Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
 
 /**
  * Floating callouts in the style of the films' workshop HUD: a short diagonal leader from the
@@ -182,36 +187,37 @@ export class LabelLayer {
   private place(e: Entry, width: number, bottom: number, keepOut: Rect[]): Entry['target'] {
     const spec = e.spec!;
     const reach = spec.variant === 'info' ? 64 : 48;
-    let side: 'left' | 'right' = spec.side && spec.side !== 'auto' ? spec.side : spec.anchor.x < width / 2 ? 'left' : 'right';
-    const boxFor = (s: 'left' | 'right', below: boolean): Rect => {
+    const side: 'left' | 'right' = spec.side && spec.side !== 'auto' ? spec.side : spec.anchor.x < width / 2 ? 'left' : 'right';
+    const other = side === 'left' ? 'right' : 'left';
+    const blocked = spec.avoid ? [...keepOut, spec.avoid] : keepOut;
+    // Candidates in order of preference: outward and above, outward and below, then the inner
+    // side. Each is clamped onto the screen and scored by how much it covers what it must keep
+    // clear of and how far clamping moved it; the cheapest wins.
+    let best: Entry['target'] | null = null;
+    let bestCost = Infinity;
+    const candidates = [[side, false], [side, true], [other, false], [other, true]] as const;
+    candidates.forEach(([s, below], rank) => {
       const elbowX = spec.anchor.x + (s === 'right' ? reach : -reach);
       const elbowY = spec.anchor.y + (below ? reach : -reach);
-      return {
-        x: s === 'right' ? elbowX + 2 : elbowX - 2 - e.w,
-        y: below ? elbowY + 3 : elbowY - 3 - e.h,
+      const x0 = s === 'right' ? elbowX + 2 : elbowX - 2 - e.w;
+      const y0 = below ? elbowY + 3 : elbowY - 3 - e.h;
+      const r = {
+        x: Math.min(Math.max(MARGIN, x0), width - MARGIN - e.w),
+        y: Math.min(Math.max(MARGIN, y0), bottom - GAP - e.h),
         w: e.w,
         h: e.h,
       };
-    };
-    const fits = (r: Rect) =>
-      r.x >= MARGIN && r.x + r.w <= width - MARGIN && r.y >= MARGIN && r.y + r.h <= bottom - GAP && !keepOut.some((k) => overlaps(r, k));
-    // Preference order: outward and above, outward and below, then the inner side.
-    const other = side === 'left' ? 'right' : 'left';
-    for (const [s, below] of [
-      [side, false],
-      [side, true],
-      [other, false],
-      [other, true],
-    ] as const) {
-      const r = boxFor(s, below);
-      if (fits(r)) return { ...r, side: s, below };
-    }
-    // Nothing fits cleanly: stay outward and clamp onto the screen.
-    const r = boxFor(side, false);
-    r.x = Math.min(Math.max(MARGIN, r.x), width - MARGIN - r.w);
-    r.y = Math.min(Math.max(MARGIN, r.y), bottom - GAP - r.h);
-    side = r.x + r.w / 2 >= spec.anchor.x ? 'right' : 'left';
-    return { ...r, side, below: false };
+      const covered = blocked.reduce((sum, k) => sum + overlapArea(r, k), 0);
+      const cost = covered + (Math.abs(r.x - x0) + Math.abs(r.y - y0)) * 20 + rank;
+      if (cost >= bestCost) return;
+      bestCost = cost;
+      best = {
+        ...r,
+        side: r.x + r.w / 2 >= spec.anchor.x ? 'right' : 'left',
+        below: r.y + r.h / 2 > spec.anchor.y,
+      };
+    });
+    return best!;
   }
 
   private create(key: string): Entry {
