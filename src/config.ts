@@ -25,6 +25,19 @@ export const CONFIG = {
     minTrackingConfidence: 0.5,
     /** Keep a hand "alive" this long after the tracker drops it, so grabs survive blips. */
     lostGraceMs: 260,
+    /**
+     * Matching detections to hands across frames. Distances are in hand sizes (wrist to middle
+     * knuckle) per nominal frame; a hand rarely moves more than ~0.7 of its size between frames.
+     */
+    nominalFrameMs: 1000 / 30,
+    /** What starting a new hand costs; a detection nearer than this to a tracked hand stays with it. */
+    spawnCost: 2,
+    /** Penalty for going against a fully confident left/right label. */
+    labelWeight: 0.6,
+    /** How fast a hand's running label agreement follows each new label (per frame). */
+    labelTrustRate: 0.15,
+    /** Below this agreement the hand is handed over to the side its labels keep naming. */
+    labelHandover: -0.5,
     /** One Euro filter for normalized image landmarks (units: image fractions). */
     imageFilter: { minCutoff: 1.6, beta: 9, dCutoff: 1.0 },
     /** One Euro filter for world landmarks (units: metres). */
