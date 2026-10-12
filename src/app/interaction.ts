@@ -346,7 +346,7 @@ export class InteractionController {
   toggleExplode(): void {
     const target = this.focusObject();
     if (!target) {
-      this.d.toast('NO HOLOGRAM — PINCH & HOLD TO SPAWN');
+      this.d.toast('NO HOLOGRAM · PINCH + HOLD TO FABRICATE');
       return;
     }
     if (target.exploded || target.parts.some((p) => p.detached)) this.assemble(target);

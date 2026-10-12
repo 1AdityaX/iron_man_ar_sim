@@ -4,21 +4,24 @@ export type HudAction = 'mirror' | 'depth' | 'bw' | 'camera' | 'labels' | 'occlu
 
 const onOff = (v: boolean) => (v ? 'ON' : 'OFF');
 
-/** The top-right control stack, the help footer and the toast line. */
+/** The SYSTEMS panel, the brand/status block, the gesture guide and the toast line. */
 export class Hud {
-  private readonly buttons = new Map<string, HTMLButtonElement>();
+  private readonly rows = new Map<string, HTMLButtonElement>();
   private readonly controls = document.getElementById('hud-controls')!;
   private readonly extra = this.controls.querySelector<HTMLElement>('.hud-extra')!;
   private readonly dimInput = this.controls.querySelector<HTMLInputElement>('input[data-action="dim"]')!;
   private readonly dimValue = this.controls.querySelector<HTMLElement>('.hud-slider-value')!;
   private readonly help = document.getElementById('help')!;
   private readonly toastEl = document.getElementById('toast')!;
+  private readonly statusEl = document.getElementById('sys-status')!;
+  private readonly clockEl = document.getElementById('sys-clock')!;
   private toastTimer = 0;
+  private clockSeconds = -1;
 
   constructor(onAction: (action: HudAction) => void, onDim: (value: number) => void) {
     this.controls.querySelectorAll<HTMLButtonElement>('button[data-action]').forEach((btn) => {
       const action = btn.dataset.action!;
-      this.buttons.set(action, btn);
+      this.rows.set(action, btn);
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         btn.blur();
@@ -40,17 +43,53 @@ export class Hud {
   }
 
   sync(s: Settings, cameraLabel: string): void {
-    this.set('mirror', `MIRROR ${onOff(s.mirror)}`, s.mirror);
-    this.set('depth', `DEPTH INVERT ${onOff(s.depthInvert)}`, s.depthInvert);
-    this.set('bw', `B&W ${onOff(s.grayscale)}`, s.grayscale);
-    this.set('camera', `CAMERA ${cameraLabel}`, true);
-    this.set('labels', `LABELS ${onOff(s.labels)}`, s.labels);
-    this.set('occlusion', `OCCLUSION ${onOff(s.occlusion)}`, s.occlusion);
-    this.set('debug', `DEBUG ${onOff(s.debug)}`, s.debug);
-    this.set('help', `HELP ${onOff(s.help)}`, s.help);
+    this.set('mirror', onOff(s.mirror), s.mirror);
+    this.set('depth', onOff(s.depthInvert), s.depthInvert);
+    this.set('bw', onOff(s.grayscale), s.grayscale);
+    this.set('camera', cameraLabel, cameraLabel !== 'OFF');
+    this.set('labels', onOff(s.labels), s.labels);
+    this.set('occlusion', onOff(s.occlusion), s.occlusion);
+    this.set('debug', onOff(s.debug), s.debug);
+    this.set('help', onOff(s.help), s.help);
     this.dimInput.value = String(Math.round(s.dim * 100));
     this.showDim(s.dim);
     this.help.classList.toggle('hidden', !s.help);
+  }
+
+  toast(text: string): void {
+    this.toastEl.textContent = text;
+    this.toastEl.classList.add('show');
+    window.clearTimeout(this.toastTimer);
+    this.toastTimer = window.setTimeout(() => this.toastEl.classList.remove('show'), 1600);
+  }
+
+  /** The brand block's status line; `live` lights the LED green. */
+  setStatus(text: string, live: boolean): void {
+    if (this.statusEl.textContent !== text) this.statusEl.textContent = text;
+    document.body.classList.toggle('live', live);
+  }
+
+  /** Mission clock since the session started. */
+  setClock(seconds: number): void {
+    const s = Math.floor(seconds);
+    if (s === this.clockSeconds) return;
+    this.clockSeconds = s;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    this.clockEl.textContent = `T+${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+  }
+
+  get controlsRect(): DOMRect {
+    return this.controls.getBoundingClientRect();
+  }
+
+  /** Screen y below which right-side callouts may go without covering the controls. */
+  get controlsBottom(): number {
+    return this.controls.getBoundingClientRect().bottom;
+  }
+
+  /** Screen y above which callouts must stay to keep the gesture guide readable. */
+  get helpTop(): number {
+    return this.help.classList.contains('hidden') ? window.innerHeight : this.help.getBoundingClientRect().top;
   }
 
   private showDim(v: number): void {
@@ -59,31 +98,11 @@ export class Hud {
     this.dimInput.style.setProperty('--fill', `${(v / max) * 100}%`);
   }
 
-  toast(text: string): void {
-    this.toastEl.textContent = text;
-    this.toastEl.classList.add('show');
-    window.clearTimeout(this.toastTimer);
-    this.toastTimer = window.setTimeout(() => this.toastEl.classList.remove('show'), 1400);
-  }
-
-  get controlsRect(): DOMRect {
-    return this.controls.getBoundingClientRect();
-  }
-
-  /** Screen y below which right-docked labels may go without covering the controls. */
-  get controlsBottom(): number {
-    return this.controls.getBoundingClientRect().bottom;
-  }
-
-  /** Screen y above which labels must stay to keep the help text readable. */
-  get helpTop(): number {
-    return this.help.classList.contains('hidden') ? window.innerHeight : this.help.getBoundingClientRect().top;
-  }
-
-  private set(action: string, text: string, on: boolean): void {
-    const btn = this.buttons.get(action);
-    if (!btn) return;
-    if (btn.textContent !== text) btn.textContent = text;
-    btn.classList.toggle('is-off', !on);
+  private set(action: string, value: string, on: boolean): void {
+    const row = this.rows.get(action);
+    const cell = row?.querySelector('.v');
+    if (!row || !cell) return;
+    if (cell.textContent !== value) cell.textContent = value;
+    row.classList.toggle('is-off', !on);
   }
 }

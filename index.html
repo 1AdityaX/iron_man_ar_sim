@@ -3,20 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#03101a" />
-    <title>Holo-Explorer · Iron Man AR Sim</title>
+    <meta name="theme-color" content="#020c14" />
+    <title>Holo Workshop · Iron Man AR Sim</title>
     <meta
       name="description"
-      content="Spawn, move, spin and explode Iron Man style holograms with your bare hands. Webcam hand tracking that runs entirely in your browser."
+      content="Workshop holograms you fabricate, grab, spin and take apart with your bare hands. Webcam hand tracking that runs entirely in your browser."
     />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='25' fill='none' stroke='%2358d3ff' stroke-width='5'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%2358d3ff' stroke-width='3' stroke-dasharray='5 4'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23c9f4ff'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='26' fill='none' stroke='%2366cfff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='17' fill='none' stroke='%2366cfff' stroke-width='5' stroke-dasharray='6 3.4'/%3E%3Ccircle cx='32' cy='32' r='8' fill='%23e2f7ff'/%3E%3C/svg%3E"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Rajdhani:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -27,51 +27,75 @@
       <svg id="leader-layer" aria-hidden="true"></svg>
       <div id="label-layer" aria-hidden="true"></div>
       <div id="menu-layer"></div>
-      <div id="toast" role="status" aria-live="polite"></div>
 
-      <div id="hud-controls">
-        <button type="button" class="hud-btn" data-action="mirror">MIRROR ON</button>
-        <button type="button" class="hud-btn" data-action="depth">DEPTH INVERT ON</button>
-        <button type="button" class="hud-btn" data-action="bw">B&amp;W OFF</button>
-        <button type="button" class="hud-btn" data-action="camera">CAMERA</button>
-        <label class="hud-btn hud-slider">
-          <span>DIM</span>
-          <input type="range" min="0" max="90" step="1" value="40" data-action="dim" aria-label="Dim the camera feed" />
-          <span class="hud-slider-value">40%</span>
-        </label>
-        <button type="button" class="hud-btn hud-more" data-action="more" aria-expanded="false">MORE</button>
-        <div class="hud-extra" hidden>
-          <button type="button" class="hud-btn" data-action="labels">LABELS ON</button>
-          <button type="button" class="hud-btn" data-action="occlusion">OCCLUSION OFF</button>
-          <button type="button" class="hud-btn" data-action="debug">DEBUG OFF</button>
-          <button type="button" class="hud-btn" data-action="help">HELP ON</button>
-          <button type="button" class="hud-btn" data-action="explode">EXPLODE / ASSEMBLE</button>
-        </div>
+      <div id="visor" aria-hidden="true">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div class="visor-tape"></div>
       </div>
 
+      <header id="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i></span>
+        <div class="brand-text">
+          <strong>HOLO WORKSHOP</strong>
+          <span class="brand-sub">IRON MAN AR SIM</span>
+          <span class="brand-status"><i class="led"></i><span id="sys-status">STANDBY</span><span class="sep">//</span><span id="sys-clock">T+00:00:00</span></span>
+        </div>
+      </header>
+
+      <div id="toast" role="status" aria-live="polite"></div>
+
+      <aside id="hud-controls" aria-label="Systems">
+        <div class="sys-panel">
+          <div class="sys-head"><span>SYSTEMS</span><i class="led"></i></div>
+          <button type="button" class="sys-row" data-action="mirror"><span class="k">MIRROR</span><span class="v">ON</span></button>
+          <button type="button" class="sys-row" data-action="depth"><span class="k">DEPTH INVERT</span><span class="v">ON</span></button>
+          <button type="button" class="sys-row" data-action="bw"><span class="k">MONOCHROME</span><span class="v">OFF</span></button>
+          <button type="button" class="sys-row" data-action="camera"><span class="k">CAMERA</span><span class="v">OFF</span></button>
+          <label class="sys-row sys-dim">
+            <span class="k">DIM</span>
+            <input type="range" min="0" max="90" step="1" value="40" data-action="dim" aria-label="Dim the camera feed" />
+            <span class="v hud-slider-value">40%</span>
+          </label>
+          <button type="button" class="sys-more" data-action="more" aria-expanded="false">ADVANCED</button>
+          <div class="hud-extra" hidden>
+            <button type="button" class="sys-row" data-action="labels"><span class="k">CALLOUTS</span><span class="v">ON</span></button>
+            <button type="button" class="sys-row" data-action="occlusion"><span class="k">OCCLUSION</span><span class="v">OFF</span></button>
+            <button type="button" class="sys-row" data-action="debug"><span class="k">DIAGNOSTICS</span><span class="v">OFF</span></button>
+            <button type="button" class="sys-row" data-action="help"><span class="k">GESTURE GUIDE</span><span class="v">ON</span></button>
+            <button type="button" class="sys-row sys-action" data-action="explode"><span class="k">EXPLODE / ASSEMBLE</span><span class="v">E</span></button>
+          </div>
+        </div>
+      </aside>
+
       <footer id="help">
-        <p class="help-text">
-          PINCH &amp; HOLD (OR DOUBLE-CLICK): SPAWN / MENU · FIST: MOVE · 2 FISTS: SCALE &amp; ROLL · POINT &amp; FLICK A
-          FINGER: SPIN · 2 FISTS PULL APART, PALMS TOGETHER THEN APART, OR TWIST A FIST CCW: EXPLODE · EXPLODED: PINCH A
-          PART TO PULL IT OUT, HOLD IT FOR INFO, CLAP TO ASSEMBLE · E EXPLODE · C CAMERA · B BLACK &amp; WHITE · F MIRROR ·
-          I DEPTH · L LABELS · O OCCLUSION · D DEBUG · H HELP
+        <ul class="legend">
+          <li><b>PINCH + HOLD</b><span>MENU</span></li>
+          <li><b>FIST</b><span>GRAB</span></li>
+          <li><b>TWO FISTS</b><span>SCALE · ROLL</span></li>
+          <li><b>POINT + FLICK</b><span>SPIN</span></li>
+          <li><b>FISTS APART · PALMS APART · TWIST ↺</b><span>EXPLODE</span></li>
+          <li><b>PINCH A PART</b><span>PULL · HOLD = INFO</span></li>
+          <li><b>CLAP</b><span>ASSEMBLE</span></li>
+        </ul>
+        <p class="keys">
+          <span><kbd>E</kbd>EXPLODE</span><span><kbd>C</kbd>CAMERA</span><span><kbd>B</kbd>MONO</span><span><kbd>F</kbd>MIRROR</span><span><kbd>I</kbd>DEPTH</span><span><kbd>L</kbd>CALLOUTS</span><span><kbd>O</kbd>OCCLUSION</span><span><kbd>D</kbd>DIAGNOSTICS</span><span><kbd>H</kbd>GUIDE</span><span>DOUBLE-CLICK · MENU</span>
         </p>
-        <div class="brand"><b>HOLO-EXPLORER</b><span>IRON MAN AR SIM</span></div>
       </footer>
 
       <section id="start-screen">
         <div class="start-card">
           <div class="start-emblem" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
-          <h1>HOLO-EXPLORER</h1>
+          <h1>HOLO WORKSHOP</h1>
           <p class="start-sub">IRON MAN AR SIM</p>
-          <p class="start-lede">Spawn, grab, spin and explode holograms with your bare hands.</p>
+          <p class="start-lede">Fabricate holograms in mid-air, then grab, spin and take them apart with your bare hands.</p>
           <div class="start-actions">
-            <button type="button" id="btn-start" class="start-primary">INITIALIZE</button>
-            <button type="button" id="btn-demo" class="start-secondary">MOUSE DEMO</button>
+            <button type="button" id="btn-start" class="start-primary">ENGAGE</button>
+            <button type="button" id="btn-demo" class="start-secondary">MOUSE MODE</button>
           </div>
+          <ol id="start-log" class="start-log" aria-live="polite"></ol>
           <p id="start-status" class="start-status">BOOTING</p>
           <p class="start-note">
-            Needs a webcam and good light. Hand tracking runs locally in your browser; your video never leaves this
+            Needs a webcam and decent light. Hand tracking runs locally in your browser; your video never leaves this
             device.
           </p>
         </div>

@@ -82,6 +82,7 @@ export class App {
   private trackWindowStart = performance.now();
   private controlsBottom = 0;
   private helpTop = 0;
+  private sessionStart = performance.now();
   /** Number of video frames run through the tracker so far. */
   framesTracked = 0;
   /** A manually advanced clock in ms for scripted replays and tests; null means real time. */
@@ -173,7 +174,7 @@ export class App {
     this.start.hide();
     this.resize();
     this.applySettings();
-    this.hud.toast(this.tracker.ready ? 'RAISE A HAND — PINCH & HOLD TO SPAWN' : 'TRACKING OFFLINE — MOUSE ONLY');
+    this.hud.toast(this.tracker.ready ? 'RAISE A HAND · PINCH + HOLD TO FABRICATE' : 'TRACKING OFFLINE · MOUSE ONLY');
     this.run();
   }
 
@@ -183,13 +184,14 @@ export class App {
     this.start.hide();
     this.applySettings();
     this.ctl.spawn(ARC_REACTOR, this.vp.width / 2, this.vp.height * 0.45, 0.8);
-    this.hud.toast('MOUSE DEMO — DOUBLE-CLICK FOR MENUS');
+    this.hud.toast('MOUSE MODE · DOUBLE-CLICK FOR MENUS');
     this.run();
   }
 
   private run(): void {
     if (this.running) return;
     this.running = true;
+    this.sessionStart = performance.now();
     this.lastFrame = this.clock();
     requestAnimationFrame(this.loop);
   }
@@ -245,6 +247,8 @@ export class App {
     this.ctl.buildLabels(this.labels);
     this.labels.end(dt, this.vp.width, this.vp.height, this.controlsBottom, this.helpTop);
     this.stage.render();
+    this.hud.setClock((performance.now() - this.sessionStart) / 1000);
+    this.hud.setStatus(this.statusText(), this.mode === 'camera' && this.tracker.ready);
     this.debug.draw(this.settings.debug, this.hands.all, {
       fps: this.fps,
       trackerFps: this.trackerFps,
@@ -256,6 +260,14 @@ export class App {
     });
     requestAnimationFrame(this.loop);
   };
+
+  private statusText(): string {
+    if (this.mode === 'demo') return 'MOUSE MODE';
+    if (this.mode !== 'camera') return 'STANDBY';
+    if (!this.tracker.ready) return 'TRACKING OFFLINE';
+    const n = this.hands.all.filter((h) => h.present).length;
+    return n ? `TRACKING ${n} HAND${n > 1 ? 'S' : ''}` : 'SEARCHING';
+  }
 
   private logEvents(events: GestureEvent[], now: number): void {
     for (const e of events) {
@@ -279,11 +291,11 @@ export class App {
         break;
       case 'bw':
         s.grayscale = !s.grayscale;
-        toast(`BLACK & WHITE ${onOff(s.grayscale)}`);
+        toast(`MONOCHROME ${onOff(s.grayscale)}`);
         break;
       case 'labels':
         s.labels = !s.labels;
-        toast(`LABELS ${onOff(s.labels)}`);
+        toast(`CALLOUTS ${onOff(s.labels)}`);
         break;
       case 'occlusion':
         s.occlusion = !s.occlusion;
@@ -291,7 +303,7 @@ export class App {
         break;
       case 'debug':
         s.debug = !s.debug;
-        toast(`DEBUG ${onOff(s.debug)}`);
+        toast(`DIAGNOSTICS ${onOff(s.debug)}`);
         break;
       case 'help':
         s.help = !s.help;

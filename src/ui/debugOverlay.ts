@@ -79,7 +79,8 @@ export class DebugOverlay {
       this.panel(x, y, lines, color);
     }
 
-    this.panel(14, 14, [
+    // Below the brand block in the top-left corner.
+    this.panel(24, 100, [
       `FPS ${stats.fps.toFixed(0)}  TRACK ${stats.trackerFps.toFixed(0)} Hz  ${stats.detectMs.toFixed(1)} ms`,
       `DELEGATE ${stats.delegate}  VIDEO ${stats.video}`,
       `OBJECTS ${stats.objects}`,
