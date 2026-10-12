@@ -325,7 +325,7 @@ export class InteractionController {
     if (this.mouse.drag?.hit.obj === obj) this.mouseUp();
     if (!obj.assemble()) return false;
     obj.root.getWorldPosition(this.v);
-    this.d.fx.implode(this.v, PALETTE.gold, Math.min(0.5, obj.worldRadius * 1.4));
+    this.d.fx.implode(this.v, PALETTE.amber, Math.min(0.5, obj.worldRadius * 1.4));
     this.focus = obj;
     return true;
   }

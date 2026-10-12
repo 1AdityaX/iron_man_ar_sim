@@ -81,7 +81,7 @@ const crust: PartSpec = {
     // A few "city lights".
     for (let i = 0; i < 14; i++) {
       const p = new THREE.Vector3().randomDirection().multiplyScalar(r);
-      const s = look.glow(0.012, PALETTE.gold, 1.6, 0.9);
+      const s = look.glow(0.012, PALETTE.amber, 1.6, 0.9);
       s.position.copy(p);
       g.add(s);
     }

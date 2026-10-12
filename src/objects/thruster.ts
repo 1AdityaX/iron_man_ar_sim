@@ -111,7 +111,7 @@ const combustor: PartSpec = {
     g.add(circle(look, 0.059, 0, { opacity: 0.8 }));
     g.add(
       radialArray(12, (a) => {
-        const s = look.glow(0.03, PALETTE.gold, 1.8, 0.9);
+        const s = look.glow(0.03, PALETTE.amber, 1.8, 0.9);
         s.position.set(Math.cos(a) * 0.085, Math.sin(a) * 0.085, 0.028);
         return s;
       }),

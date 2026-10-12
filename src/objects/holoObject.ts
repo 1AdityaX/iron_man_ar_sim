@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config';
 import { clamp, damp, easeOutBack } from '../core/math';
 import { HoloLook, PALETTE } from '../render/holoMaterials';
+import { pedestal } from './builders';
 
 export interface PartSpec {
   id: string;
@@ -104,8 +105,8 @@ export class HoloPart {
 
     this.hover += ((this.highlight === 'hover' ? 1 : 0) - this.hover) * damp(14, dt);
     this.active += ((this.highlight === 'active' ? 1 : 0) - this.active) * damp(14, dt);
-    // Hover brightens toward ice-white; grabbing turns the part gold.
-    tmpColor.copy(PALETTE.ice).lerp(PALETTE.gold, this.active);
+    // Hover brightens toward ice-white; grabbing turns the part amber.
+    tmpColor.copy(PALETTE.ice).lerp(PALETTE.amber, this.active);
     const amount = Math.max(this.hover * 0.45, this.active * 0.9);
     this.look.apply(tmpColor, amount, 1 + this.hover * 0.5 + this.active * 0.6, fade);
   }
@@ -140,6 +141,10 @@ export class HoloObject {
   private readonly guide: THREE.Line;
   private readonly guideMat: THREE.LineDashedMaterial;
   private readonly guideLook = new HoloLook();
+  /** Holotable projector pad under the hologram; stays level however the object turns. */
+  private readonly pad: THREE.Group;
+  private readonly padSpinner: THREE.Group;
+  private readonly padLook = new HoloLook();
   private readonly dq = new THREE.Quaternion();
   private readonly axis = new THREE.Vector3();
 
@@ -169,6 +174,13 @@ export class HoloObject {
     this.guide = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), this.guideMat);
     this.guide.computeLineDistances();
     this.local.add(this.guide);
+
+    const pad = pedestal(this.padLook, spec.radius * 0.85);
+    this.pad = pad.group;
+    this.padSpinner = pad.spinner;
+    this.pad.rotation.x = -Math.PI / 2;
+    this.pad.position.y = -spec.radius * 1.35;
+    this.root.add(this.pad);
     this.root.scale.setScalar(0.0001);
   }
 
@@ -187,9 +199,9 @@ export class HoloObject {
 
   get state(): string {
     if (this.removing) return 'OFFLINE';
-    if (this.age < 0.9) return 'INITIALIZING';
-    if (this.grabCount > 1) return 'DUAL LOCK';
-    if (this.grabCount === 1) return 'GRABBED';
+    if (this.age < 0.9) return 'MATERIALIZING';
+    if (this.grabCount > 1) return 'DUAL HOLD';
+    if (this.grabCount === 1) return 'HELD';
     if (this.angularVelocity.length() > 0.8) return 'SPINNING';
     if (this.exploded) return 'EXPLODED';
     if (this.explodeAmount > 0.05) return 'ASSEMBLING';
@@ -303,6 +315,8 @@ export class HoloObject {
     for (const p of this.parts) p.update(dt, this.exploded, fade);
     this.guideLook.apply(PALETTE.cyan, 0, 1, fade * this.explodeAmount);
     this.guide.visible = this.explodeAmount > 0.02;
+    this.padSpinner.rotation.z = time * 0.6;
+    this.padLook.apply(PALETTE.amber, this.grabCount > 0 ? 0.6 : 0, 1, fade * (1 - 0.6 * this.explodeAmount));
   }
 
   /** Bounding radius in world units for the current (assembled or exploded) layout. */
@@ -335,6 +349,7 @@ export class HoloObject {
     });
     for (const p of this.parts) p.look.dispose();
     this.guideLook.dispose();
+    this.padLook.dispose();
     this.root.removeFromParent();
   }
 }

@@ -2,11 +2,12 @@ import * as THREE from 'three';
 
 /** Linear-space palette. Intensities above 1 are fine: the pipeline is HDR and feeds bloom. */
 export const PALETTE = {
-  cyan: new THREE.Color('#58d3ff'),
-  ice: new THREE.Color('#c9f4ff'),
-  blue: new THREE.Color('#2b86ff'),
-  gold: new THREE.Color('#ffbf3c'),
-  red: new THREE.Color('#ff2f55'),
+  cyan: new THREE.Color('#5ccbff'),
+  ice: new THREE.Color('#d3f4ff'),
+  blue: new THREE.Color('#2b7dff'),
+  /** Selection, grabs and anything "hot", as in the films' workshop holograms. */
+  amber: new THREE.Color('#ff9a2a'),
+  red: new THREE.Color('#ff4a26'),
   white: new THREE.Color('#ffffff'),
 };
 
@@ -69,7 +70,7 @@ export class HoloSurfaceMaterial extends THREE.ShaderMaterial {
     super({
       uniforms: {
         uColor: { value: (opts.color ?? PALETTE.cyan).clone() },
-        uTint: { value: PALETTE.gold.clone() },
+        uTint: { value: PALETTE.amber.clone() },
         uTintAmt: { value: 0 },
         uOpacity: { value: opacity },
         uBase: { value: opts.base ?? 0.08 },
@@ -257,7 +258,7 @@ interface TintedLine {
 
 /**
  * Tracks every material belonging to one selectable piece of a hologram so it can be faded,
- * brightened or tinted (hover = brighter, grabbed = gold) as a unit.
+ * brightened or tinted (hover = brighter, grabbed = amber) as a unit.
  */
 export class HoloLook {
   readonly surfaces: HoloSurfaceMaterial[] = [];

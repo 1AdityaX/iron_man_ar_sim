@@ -110,3 +110,37 @@ export function radialArray(count: number, make: (angle: number, i: number) => T
   return g;
 }
 
+
+/**
+ * A holotable projector pad: concentric rings and ticks lying flat, with faint light columns
+ * rising toward the hologram. Built in the XY plane; the caller tips it horizontal.
+ */
+export function pedestal(look: HoloLook, radius: number): { group: THREE.Group; spinner: THREE.Group } {
+  const group = new THREE.Group();
+  const spinner = new THREE.Group();
+  group.add(circle(look, radius, 0, { intensity: 1.4, opacity: 0.85 }, 96));
+  group.add(ticks(look, radius * 1.04, radius * 1.12, 72, { longEvery: 6, longInner: radius * 0.98, intensity: 1.1, opacity: 0.6 }));
+  group.add(circle(look, radius * 1.18, 0, { intensity: 0.9, opacity: 0.35 }, 96));
+  spinner.add(arc(look, radius * 0.72, 0, 1.4, 0, { intensity: 1.3, opacity: 0.8 }));
+  spinner.add(arc(look, radius * 0.72, Math.PI, 1.4, 0, { intensity: 1.3, opacity: 0.8 }));
+  spinner.add(circle(look, radius * 0.45, 0, { intensity: 1, opacity: 0.45 }, 48));
+  group.add(spinner);
+
+  // Light columns: bright at the pad, fading out as they rise (+Z here, up once tipped).
+  const positions: number[] = [];
+  const colors: number[] = [];
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * TAU;
+    const x = Math.cos(a) * radius;
+    const y = Math.sin(a) * radius;
+    positions.push(x, y, 0, x * 0.9, y * 0.9, radius * 0.9);
+    colors.push(1, 1, 1, 0, 0, 0);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  const beams = look.line(undefined, 1.2, 0.35);
+  beams.vertexColors = true;
+  group.add(new THREE.LineSegments(geo, beams));
+  return { group, spinner };
+}

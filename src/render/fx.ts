@@ -87,11 +87,11 @@ export class Fx {
     }, () => sprite.material.dispose());
   }
 
-  /** The big gold clap shockwave. */
+  /** The amber clap shockwave. */
   clap(pos: THREE.Vector3): void {
-    this.flash(pos, PALETTE.gold, 0.16, 0.35, 1.2);
-    this.shockwave(pos, PALETTE.gold, 0.8, 0.85, 0, 0.022);
-    this.shockwave(pos, PALETTE.gold, 0.5, 0.75, 0.08, 0.016);
+    this.flash(pos, PALETTE.amber, 0.16, 0.35, 1.2);
+    this.shockwave(pos, PALETTE.amber, 0.8, 0.85, 0, 0.022);
+    this.shockwave(pos, PALETTE.amber, 0.5, 0.75, 0.08, 0.016);
   }
 
   update(dt: number): void {
