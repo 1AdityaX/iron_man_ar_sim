@@ -5,24 +5,34 @@ export interface LabelSpec {
   /** Screen point the leader line points at. */
   anchor: Vec2;
   title: string;
-  lines: string[];
-  /** Dock edge; 'auto' picks the edge on the anchor's side of the screen. */
+  /** Key/value rows under the title. */
+  rows: [string, string][];
+  /** Which side of the anchor the callout sits on; 'auto' points outward from screen centre. */
   side?: 'left' | 'right' | 'auto';
   variant?: 'hand' | 'object' | 'info';
+}
+
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 interface Entry {
   el: HTMLDivElement;
   titleEl: HTMLDivElement;
-  lineEls: HTMLDivElement[];
+  rowEls: { row: HTMLDivElement; k: HTMLSpanElement; v: HTMLSpanElement }[];
   path: SVGPolylineElement;
   dot: SVGCircleElement;
+  ring: SVGCircleElement;
   text: string;
   w: number;
   h: number;
+  /** Smoothed box position. */
   x: number;
   y: number;
-  side: 'left' | 'right';
+  target: Rect & { side: 'left' | 'right'; below: boolean };
   spec: LabelSpec | null;
   opacity: number;
   placed: boolean;
@@ -30,15 +40,19 @@ interface Entry {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const MARGIN = 14;
-const GAP = 8;
+const GAP = 6;
+
+const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
 /**
- * HUD callouts docked to the screen edges with angled leader lines back to what they describe
- * (hands, holograms, parts). Call begin(), put() each visible label, then end() once per frame.
+ * Floating callouts in the style of the films' workshop HUD: a short diagonal leader from the
+ * thing being described, an underline with an end tick, and the text riding on that line.
+ * Call begin(), put() each visible callout, then end() once per frame.
  */
 export class LabelLayer {
   private readonly entries = new Map<string, Entry>();
-  visible = true;
+  /** Screen areas callouts must stay out of (control panel, brand block). */
+  keepOut: () => Rect[] = () => [];
 
   constructor(
     private readonly container: HTMLElement,
@@ -50,129 +64,174 @@ export class LabelLayer {
   }
 
   put(spec: LabelSpec): void {
-    let e = this.entries.get(spec.key);
-    if (!e) e = this.create(spec.key);
+    const e = this.entries.get(spec.key) ?? this.create(spec.key);
     e.spec = spec;
-    const text = `${spec.variant}|${spec.title}|${spec.lines.join('|')}`;
-    if (text !== e.text) {
-      e.text = text;
-      e.el.className = `holo-label ${spec.variant ?? 'hand'}`;
-      e.titleEl.textContent = spec.title;
-      while (e.lineEls.length < spec.lines.length) {
-        const div = document.createElement('div');
-        e.el.appendChild(div);
-        e.lineEls.push(div);
-      }
-      e.lineEls.forEach((div, i) => {
-        div.textContent = spec.lines[i] ?? '';
-        div.hidden = i >= spec.lines.length;
-      });
-      e.w = 0; // re-measure
+    const text = `${spec.variant}|${spec.title}|${spec.rows.map((r) => r.join(':')).join('|')}`;
+    if (text === e.text) return;
+    e.text = text;
+    e.titleEl.textContent = spec.title;
+    while (e.rowEls.length < spec.rows.length) {
+      const row = document.createElement('div');
+      row.className = 'c-row';
+      const k = document.createElement('span');
+      k.className = 'k';
+      const v = document.createElement('span');
+      v.className = 'v';
+      row.append(k, v);
+      e.el.appendChild(row);
+      e.rowEls.push({ row, k, v });
     }
+    e.rowEls.forEach((r, i) => {
+      r.row.hidden = i >= spec.rows.length;
+      if (i < spec.rows.length) {
+        r.k.textContent = spec.rows[i][0];
+        r.v.textContent = spec.rows[i][1];
+      }
+    });
+    e.w = 0; // re-measure
   }
 
   /**
-   * Lays out and draws the frame's labels.
-   * @param topRight y below which right-docked labels may start (clears the control stack)
-   * @param bottom y above which labels must end (clears the help text)
+   * Lays out and draws the frame's callouts.
+   * @param bottom y the callouts must stay above (the gesture guide)
    */
-  end(dt: number, width: number, height: number, topRight: number, bottom: number): void {
+  end(dt: number, width: number, height: number, bottom: number): void {
     this.svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    const bySide: Record<'left' | 'right', Entry[]> = { left: [], right: [] };
+    const keepOut = this.keepOut();
+    const active: Entry[] = [];
     for (const e of this.entries.values()) {
-      const target = e.spec && this.visible ? 1 : 0;
-      e.opacity += (target - e.opacity) * damp(target ? 12 : 8, dt);
+      e.opacity += ((e.spec ? 1 : 0) - e.opacity) * damp(e.spec ? 12 : 8, dt);
       if (!e.spec) continue;
       if (!e.w) {
         e.w = e.el.offsetWidth;
         e.h = e.el.offsetHeight;
       }
-      const side = e.spec.side ?? 'auto';
-      e.side = side === 'auto' ? (e.spec.anchor.x < width / 2 ? 'left' : 'right') : side;
-      bySide[e.side].push(e);
+      e.target = this.place(e, width, bottom, keepOut);
+      active.push(e);
     }
 
-    for (const side of ['left', 'right'] as const) {
-      const list = bySide[side];
-      const top = side === 'right' ? topRight + GAP : MARGIN;
-      const maxY = bottom - GAP;
-      // Prefer sitting a little above the anchor, then resolve overlaps top-down.
-      const desired = list.map((e) => ({ e, y: e.spec!.anchor.y - e.h - 36 }));
-      desired.sort((a, b) => a.y - b.y);
-      let cursor = top;
-      for (const d of desired) {
-        d.y = Math.max(d.y, cursor);
-        cursor = d.y + d.e.h + GAP;
-      }
-      // Then bottom-up, so nothing runs past the help text.
-      let floor = maxY;
-      for (let i = desired.length - 1; i >= 0; i--) {
-        desired[i].y = Math.max(top, Math.min(desired[i].y, floor - desired[i].e.h));
-        floor = desired[i].y - GAP;
-      }
-      for (const d of desired) {
-        const x = side === 'left' ? MARGIN : width - MARGIN - d.e.w;
-        const k = d.e.placed ? damp(14, dt) : 1;
-        d.e.x += (x - d.e.x) * k;
-        d.e.y += (d.y - d.e.y) * k;
-        d.e.placed = true;
+    // Push overlapping callouts apart vertically (a few relaxation passes).
+    for (let pass = 0; pass < 3; pass++) {
+      for (let i = 0; i < active.length; i++) {
+        for (let j = i + 1; j < active.length; j++) {
+          const a = active[i].target;
+          const b = active[j].target;
+          if (!overlaps(a, b)) continue;
+          const upper = a.y <= b.y ? a : b;
+          const lower = upper === a ? b : a;
+          const push = (upper.y + upper.h + GAP - lower.y) / 2;
+          upper.y = Math.max(MARGIN, upper.y - push);
+          lower.y = Math.min(bottom - lower.h - GAP, lower.y + push);
+        }
       }
     }
 
     for (const e of this.entries.values()) {
       const show = e.opacity > 0.02;
       e.el.style.display = show ? '' : 'none';
-      e.path.style.display = show && e.spec ? '' : 'none';
-      e.dot.style.display = show && e.spec ? '' : 'none';
+      const lineShown = show && !!e.spec;
+      e.path.style.display = e.dot.style.display = e.ring.style.display = lineShown ? '' : 'none';
       if (!show) {
         e.placed = false;
         continue;
       }
-      e.el.classList.toggle('dock-left', e.side === 'left');
+      if (e.spec) {
+        const k = e.placed ? damp(14, dt) : 1;
+        e.x += (e.target.x - e.x) * k;
+        e.y += (e.target.y - e.y) * k;
+        e.placed = true;
+        e.el.className = `callout ${e.spec.variant ?? 'hand'} side-${e.target.side}${e.target.below ? ' below' : ''}`;
+      }
       e.el.style.opacity = e.opacity.toFixed(3);
       e.el.style.transform = `translate3d(${e.x.toFixed(1)}px, ${e.y.toFixed(1)}px, 0)`;
       if (!e.spec) continue;
+
+      // Leader: anchor -> elbow at the near end of the underline -> far end -> end tick.
       const a = e.spec.anchor;
-      const innerX = e.side === 'left' ? e.x + e.w : e.x;
-      const ly = e.y + e.h / 2;
-      // 45° elbow from the anchor, then a horizontal run into the label.
-      const run = Math.abs(ly - a.y);
-      const dir = Math.sign(innerX - a.x) || 1;
-      let ex = a.x + dir * run;
-      if ((dir > 0 && ex > innerX) || (dir < 0 && ex < innerX)) ex = innerX;
-      e.path.setAttribute('points', `${a.x.toFixed(1)},${a.y.toFixed(1)} ${ex.toFixed(1)},${ly.toFixed(1)} ${innerX.toFixed(1)},${ly.toFixed(1)}`);
-      e.path.style.opacity = (e.opacity * 0.85).toFixed(3);
-      e.path.setAttribute('class', `leader ${e.spec.variant ?? 'hand'}`);
-      e.dot.setAttribute('cx', a.x.toFixed(1));
-      e.dot.setAttribute('cy', a.y.toFixed(1));
-      e.dot.setAttribute('class', `leader-dot ${e.spec.variant ?? 'hand'}`);
-      e.dot.style.opacity = e.opacity.toFixed(3);
+      const right = e.target.side === 'right';
+      const lineY = e.target.below ? e.y - 3 : e.y + e.h + 3;
+      const nearX = right ? e.x - 2 : e.x + e.w + 2;
+      const farX = right ? e.x + e.w : e.x;
+      const tick = e.target.below ? 6 : -6;
+      e.path.setAttribute(
+        'points',
+        `${a.x.toFixed(1)},${a.y.toFixed(1)} ${nearX.toFixed(1)},${lineY.toFixed(1)} ${farX.toFixed(1)},${lineY.toFixed(1)} ${farX.toFixed(1)},${(lineY + tick).toFixed(1)}`,
+      );
+      const variant = e.spec.variant ?? 'hand';
+      e.path.setAttribute('class', `leader ${variant}`);
+      e.dot.setAttribute('class', `leader-dot ${variant}`);
+      e.ring.setAttribute('class', `leader-ring ${variant}`);
+      for (const c of [e.dot, e.ring]) {
+        c.setAttribute('cx', a.x.toFixed(1));
+        c.setAttribute('cy', a.y.toFixed(1));
+      }
+      const o = e.opacity.toFixed(3);
+      e.path.style.opacity = e.dot.style.opacity = e.ring.style.opacity = o;
     }
+  }
+
+  /** Target box for a callout: diagonally out from its anchor, clear of the edges and keep-out areas. */
+  private place(e: Entry, width: number, bottom: number, keepOut: Rect[]): Entry['target'] {
+    const spec = e.spec!;
+    const reach = spec.variant === 'info' ? 64 : 48;
+    let side: 'left' | 'right' = spec.side && spec.side !== 'auto' ? spec.side : spec.anchor.x < width / 2 ? 'left' : 'right';
+    const boxFor = (s: 'left' | 'right', below: boolean): Rect => {
+      const elbowX = spec.anchor.x + (s === 'right' ? reach : -reach);
+      const elbowY = spec.anchor.y + (below ? reach : -reach);
+      return {
+        x: s === 'right' ? elbowX + 2 : elbowX - 2 - e.w,
+        y: below ? elbowY + 3 : elbowY - 3 - e.h,
+        w: e.w,
+        h: e.h,
+      };
+    };
+    const fits = (r: Rect) =>
+      r.x >= MARGIN && r.x + r.w <= width - MARGIN && r.y >= MARGIN && r.y + r.h <= bottom - GAP && !keepOut.some((k) => overlaps(r, k));
+    // Preference order: outward and above, outward and below, then the inner side.
+    const other = side === 'left' ? 'right' : 'left';
+    for (const [s, below] of [
+      [side, false],
+      [side, true],
+      [other, false],
+      [other, true],
+    ] as const) {
+      const r = boxFor(s, below);
+      if (fits(r)) return { ...r, side: s, below };
+    }
+    // Nothing fits cleanly: stay outward and clamp onto the screen.
+    const r = boxFor(side, false);
+    r.x = Math.min(Math.max(MARGIN, r.x), width - MARGIN - r.w);
+    r.y = Math.min(Math.max(MARGIN, r.y), bottom - GAP - r.h);
+    side = r.x + r.w / 2 >= spec.anchor.x ? 'right' : 'left';
+    return { ...r, side, below: false };
   }
 
   private create(key: string): Entry {
     const el = document.createElement('div');
-    el.className = 'holo-label';
+    el.className = 'callout';
     const titleEl = document.createElement('div');
-    titleEl.className = 't';
+    titleEl.className = 'c-title';
     el.appendChild(titleEl);
     this.container.appendChild(el);
     const path = document.createElementNS(SVG_NS, 'polyline');
+    const ring = document.createElementNS(SVG_NS, 'circle');
+    ring.setAttribute('r', '6.5');
     const dot = document.createElementNS(SVG_NS, 'circle');
-    dot.setAttribute('r', '2.6');
-    this.svg.append(path, dot);
+    dot.setAttribute('r', '2.4');
+    this.svg.append(path, ring, dot);
     const entry: Entry = {
       el,
       titleEl,
-      lineEls: [],
+      rowEls: [],
       path,
       dot,
+      ring,
       text: '',
       w: 0,
       h: 0,
       x: 0,
       y: 0,
-      side: 'left',
+      target: { x: 0, y: 0, w: 0, h: 0, side: 'right', below: false },
       spec: null,
       opacity: 0,
       placed: false,

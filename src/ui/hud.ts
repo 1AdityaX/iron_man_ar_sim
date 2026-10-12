@@ -18,6 +18,9 @@ export class Hud {
   private toastTimer = 0;
   private clockSeconds = -1;
 
+  /** Called after the panel changes size (ADVANCED section toggled). */
+  onLayout: () => void = () => undefined;
+
   constructor(onAction: (action: HudAction) => void, onDim: (value: number) => void) {
     this.controls.querySelectorAll<HTMLButtonElement>('button[data-action]').forEach((btn) => {
       const action = btn.dataset.action!;
@@ -28,6 +31,7 @@ export class Hud {
         if (action === 'more') {
           this.extra.hidden = !this.extra.hidden;
           btn.setAttribute('aria-expanded', String(!this.extra.hidden));
+          this.onLayout();
         } else {
           onAction(action as HudAction);
         }
@@ -80,11 +84,6 @@ export class Hud {
 
   get controlsRect(): DOMRect {
     return this.controls.getBoundingClientRect();
-  }
-
-  /** Screen y below which right-side callouts may go without covering the controls. */
-  get controlsBottom(): number {
-    return this.controls.getBoundingClientRect().bottom;
   }
 
   /** Screen y above which callouts must stay to keep the gesture guide readable. */

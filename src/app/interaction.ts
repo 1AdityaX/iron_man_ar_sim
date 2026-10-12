@@ -466,8 +466,8 @@ export class InteractionController {
     if (labels) {
       for (const c of this.ctls) {
         if (!c.hand.present) continue;
-        const { title, lines } = this.handLabel(c);
-        layer.put({ key: `hand-${c.key}`, anchor: c.hand.palmScreen, title, lines, variant: 'hand' });
+        const { title, rows } = this.handLabel(c);
+        layer.put({ key: `hand-${c.key}`, anchor: c.hand.palmScreen, title, rows, variant: 'hand' });
       }
       const circle = { x: 0, y: 0, r: 0, depth: 0 };
       for (const obj of this.d.objects.live) {
@@ -475,9 +475,13 @@ export class InteractionController {
         const dir = circle.x < W / 2 ? -1 : 1;
         layer.put({
           key: `obj-${obj.id}`,
-          anchor: { x: circle.x + dir * circle.r * 0.55, y: circle.y - circle.r * 0.55 },
+          anchor: { x: circle.x + dir * circle.r * 0.62, y: circle.y - circle.r * 0.62 },
           title: obj.title,
-          lines: [`STATE ${obj.state}`, `SCALE ${obj.scale.toFixed(2)}x`, `CONTACT ${this.contacts(obj)}`],
+          rows: [
+            ['STATUS', obj.state],
+            ['SCALE', `${obj.scale.toFixed(2)}×`],
+            ['LINKS', String(this.contacts(obj))],
+          ],
           variant: 'object',
         });
       }
@@ -491,7 +495,7 @@ export class InteractionController {
         key: `info-${i}`,
         anchor: { x: pc.x, y: pc.y },
         title: drag.hit.part.name,
-        lines: drag.hit.part.spec.info.map(([k, v]) => `${k} ${v}`),
+        rows: drag.hit.part.spec.info,
         variant: 'info',
       });
     });
@@ -743,24 +747,29 @@ export class InteractionController {
     t.obj.setOrientation(this.q.multiply(t.quat0));
   }
 
-  private handLabel(c: HandCtl): { title: string; lines: string[] } {
+  private handLabel(c: HandCtl): { title: string; rows: [string, string][] } {
     const h = c.hand;
-    const dist = `DIST ${h.depth.toFixed(2)} m`;
+    const side = h.side === 'Left' ? 'L' : 'R';
+    const range: [string, string] = ['RANGE', `${h.depth.toFixed(2)} M`];
     if (h.fist.value && c.mode !== 'grab') {
+      // A free fist is a twist dial: show how far it has turned.
       const twist = ((h.knuckleAngle - c.fistAngle0) * 180) / Math.PI;
       return {
-        title: 'FOREARM',
-        lines: [`TWIST ${twist >= 0 ? 'CCW' : 'CW'} ${Math.abs(twist).toFixed(0)}°`, `TILT ${Math.round(Math.abs(h.tiltDeg))}°`],
+        title: `WRIST ${side}`,
+        rows: [
+          ['ROT', `${twist >= 0 ? 'CCW' : 'CW'} ${Math.abs(twist).toFixed(0)}°`],
+          ['TILT', `${Math.round(Math.abs(h.tiltDeg))}°`],
+        ],
       };
     }
-    let state: string;
-    if (c.mode === 'grab') state = `GRIP LOCK ${Math.round(h.grip * 100)}%`;
-    else if (c.mode === 'part') state = 'PART LINK';
-    else if (c.mode === 'hold') state = `HOLD ${Math.round(this.visualState(h).holdProgress * 100)}%`;
-    else if (c.mode === 'menu') state = 'MENU LINK';
-    else if (h.pinching.value) state = 'PINCH';
-    else if (h.pointing.value) state = 'POINT';
-    else state = `GRIP OPEN ${Math.round((1 - h.grip) * 100)}%`;
-    return { title: h.label, lines: [state, dist] };
+    let mode: string;
+    if (c.mode === 'grab') mode = 'LOCKED';
+    else if (c.mode === 'part') mode = 'LINKED';
+    else if (c.mode === 'hold') mode = `HOLD ${Math.round(this.visualState(h).holdProgress * 100)}%`;
+    else if (c.mode === 'menu') mode = 'MENU';
+    else if (h.pinching.value) mode = 'PINCH';
+    else if (h.pointing.value) mode = 'POINT';
+    else mode = h.grip > 0.5 ? 'CLOSED' : 'OPEN';
+    return { title: `HAND ${side}`, rows: [['GRIP', `${Math.round(h.grip * 100)}% ${mode}`], range] };
   }
 }

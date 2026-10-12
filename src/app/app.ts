@@ -14,7 +14,7 @@ import type { RawHand } from '../tracking/trackedHand';
 import { HandTracker, type Delegate } from '../tracking/handTracker';
 import { DebugOverlay } from '../ui/debugOverlay';
 import { Hud, type HudAction } from '../ui/hud';
-import { LabelLayer } from '../ui/labels';
+import { LabelLayer, type Rect } from '../ui/labels';
 import { RadialMenu } from '../ui/radialMenu';
 import { StartScreen } from '../ui/startScreen';
 import { InteractionController } from './interaction';
@@ -80,8 +80,8 @@ export class App {
   private trackerFps = 0;
   private trackCount = 0;
   private trackWindowStart = performance.now();
-  private controlsBottom = 0;
   private helpTop = 0;
+  private keepOut: Rect[] = [];
   private sessionStart = performance.now();
   /** Number of video frames run through the tracker so far. */
   framesTracked = 0;
@@ -114,6 +114,8 @@ export class App {
       document.getElementById('label-layer')!,
       document.getElementById('leader-layer') as unknown as SVGSVGElement,
     );
+    this.labels.keepOut = () => this.keepOut;
+    this.hud.onLayout = () => this.cacheLayout();
     this.menu = new RadialMenu(document.getElementById('menu-layer')!, (id) => this.ctl.onMenuSelect(id));
     this.menu.avoid = () => this.hud.controlsRect;
     this.debug = new DebugOverlay(document.getElementById('debug-layer') as HTMLCanvasElement);
@@ -245,7 +247,7 @@ export class App {
     this.menu.update(dt);
     this.labels.begin();
     this.ctl.buildLabels(this.labels);
-    this.labels.end(dt, this.vp.width, this.vp.height, this.controlsBottom, this.helpTop);
+    this.labels.end(dt, this.vp.width, this.vp.height, this.helpTop);
     this.stage.render();
     this.hud.setClock((performance.now() - this.sessionStart) / 1000);
     this.hud.setStatus(this.statusText(), this.mode === 'camera' && this.tracker.ready);
@@ -369,10 +371,11 @@ export class App {
     this.cacheLayout();
   }
 
-  /** Label layout needs these every frame; reading them live would force synchronous layout. */
+  /** Callout layout needs these every frame; reading them live would force synchronous layout. */
   private cacheLayout(): void {
-    this.controlsBottom = this.hud.controlsBottom;
     this.helpTop = this.hud.helpTop;
+    const pad = (r: DOMRect): Rect => ({ x: r.x - 8, y: r.y - 8, w: r.width + 16, h: r.height + 16 });
+    this.keepOut = [pad(this.hud.controlsRect), pad(document.getElementById('brand')!.getBoundingClientRect())];
   }
 
   private bindInput(canvas: HTMLCanvasElement): void {
