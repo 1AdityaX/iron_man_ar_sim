@@ -9,7 +9,7 @@ Everything runs locally in the browser: [MediaPipe Hand Landmarker](https://ai.g
 tracks 21 landmarks per hand, and [three.js](https://threejs.org) renders the holograms with bloom
 over your camera feed. There's no server and nothing is uploaded.
 
-![Holo Workshop: an exploded arc reactor over its projector pad, with hand reticles and a part info callout](docs/screenshot.png)
+![Holo Workshop: an exploded arc reactor over its projector pad, the left hand pulling out its outer casing with the spec callout showing](docs/screenshot.jpg)
 
 ## Quick start
 
