@@ -77,6 +77,21 @@ export class HandSet {
     return dropped;
   }
 
+  /**
+   * Where the hands still being tracked were last seen, for those that none of these detections
+   * would go to: they are worth looking for again, zoomed in (see refind.ts).
+   */
+  missing(raws: RawHand[], tMs: number, vp: Viewport): Anchor[] {
+    const dets = raws.slice(0, 2).map((raw) => ({ raw, anchor: anchorOf(raw, tMs, vp) }));
+    const assigned = this.assign(dets, tMs, vp);
+    const out: Anchor[] = [];
+    for (const hand of this.all) {
+      const last = this.anchors.get(hand.side);
+      if (hand.present && last && !assigned.has(hand.side)) out.push(last);
+    }
+    return out;
+  }
+
   /** Drops both hands immediately (e.g. when the camera changes). */
   clear(): TrackedHand[] {
     const dropped = this.all.filter((h) => h.present);

@@ -1,5 +1,6 @@
 import { FilesetResolver, HandLandmarker, type HandLandmarkerResult } from '@mediapipe/tasks-vision';
 import { CONFIG } from '../config';
+import { fromCrop, type CropRegion } from './refind';
 import type { RawHand, Side } from './trackedHand';
 
 export type Delegate = 'GPU' | 'CPU';
@@ -58,10 +59,17 @@ export class HandTracker {
   swapHandedness = false;
 
   private landmarker: HandLandmarker | null = null;
+  /** Single-image detector for zoomed crops around hands the full-frame pass lost. */
+  private zoomer: HandLandmarker | null = null;
+  private crop: CanvasRenderingContext2D | null = null;
   private lastTimestamp = 0;
 
   get ready(): boolean {
     return this.landmarker !== null;
+  }
+
+  get canRefind(): boolean {
+    return this.zoomer !== null && CONFIG.tracking.refind.enabled;
   }
 
   async init(onStatus: (message: string) => void, only?: Delegate): Promise<void> {
@@ -95,6 +103,18 @@ export class HandTracker {
         console.warn('[tracker] GPU delegate unavailable, falling back to CPU', err);
       }
     }
+    try {
+      this.zoomer = await HandLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetBuffer: model, delegate: this.delegate },
+        runningMode: 'IMAGE',
+        numHands: 2,
+        minHandDetectionConfidence: CONFIG.tracking.refind.minDetectionConfidence,
+        minHandPresenceConfidence: CONFIG.tracking.minHandPresenceConfidence,
+      });
+    } catch (err) {
+      // Tracking still works; distant hands are just lost sooner.
+      console.warn('[tracker] zoomed re-finding unavailable', err);
+    }
     onStatus('TRACKING ONLINE');
   }
 
@@ -107,6 +127,30 @@ export class HandTracker {
     const result = this.landmarker.detectForVideo(video, ts);
     this.lastDetectMs = performance.now() - t0;
     return this.parse(result);
+  }
+
+  /**
+   * Runs the single-image detector on each crop of the current frame and returns the hands found
+   * in each, in full-frame image coordinates. Time spent is added to lastDetectMs.
+   */
+  refind(video: HTMLVideoElement, regions: CropRegion[]): RawHand[][] {
+    const zoomer = this.zoomer;
+    if (!zoomer) return regions.map(() => []);
+    const px = CONFIG.tracking.refind.canvasPx;
+    if (!this.crop) {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = px;
+      this.crop = canvas.getContext('2d');
+      if (!this.crop) return regions.map(() => []);
+    }
+    const ctx = this.crop;
+    const t0 = performance.now();
+    const found = regions.map((r) => {
+      ctx.drawImage(video, r.x, r.y, r.size, r.size, 0, 0, px, px);
+      return this.parse(zoomer.detect(ctx.canvas)).map((hand) => ({ ...hand, image: fromCrop(hand.image, r) }));
+    });
+    this.lastDetectMs += performance.now() - t0;
+    return found;
   }
 
   private parse(result: HandLandmarkerResult): RawHand[] {
@@ -135,6 +179,8 @@ export class HandTracker {
 
   close(): void {
     this.landmarker?.close();
+    this.zoomer?.close();
     this.landmarker = null;
+    this.zoomer = null;
   }
 }

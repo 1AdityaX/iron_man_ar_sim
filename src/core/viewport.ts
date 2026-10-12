@@ -80,6 +80,14 @@ export class Viewport {
     return out;
   }
 
+  /** Inverse of imageToScreen. */
+  screenToImage(x: number, y: number, out: Vec2): Vec2 {
+    const u = (x - this.offsetX) / this.displayWidth;
+    out.x = this.mirror ? 1 - u : u;
+    out.y = (y - this.offsetY) / this.displayHeight;
+    return out;
+  }
+
   screenToWorld(x: number, y: number, depth: number, out: Vec3Like): Vec3Like {
     const f = this.focalPx;
     out.x = ((x - this.width / 2) / f) * depth;

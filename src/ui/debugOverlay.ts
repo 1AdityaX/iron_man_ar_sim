@@ -8,6 +8,8 @@ export interface DebugStats {
   delegate: string;
   video: string;
   objects: number;
+  /** Hands re-found in zoomed crops so far. */
+  refound: number;
   /** Most recent gesture events. */
   events: string[];
 }
@@ -83,7 +85,7 @@ export class DebugOverlay {
     this.panel(24, 100, [
       `FPS ${stats.fps.toFixed(0)}  TRACK ${stats.trackerFps.toFixed(0)} Hz  ${stats.detectMs.toFixed(1)} ms`,
       `DELEGATE ${stats.delegate}  VIDEO ${stats.video}`,
-      `OBJECTS ${stats.objects}`,
+      `OBJECTS ${stats.objects}  REFOUND ${stats.refound}`,
       ...stats.events.map((e) => `› ${e}`),
     ], '#58d3ff');
   }

@@ -10,8 +10,9 @@ import { sharedUniforms } from '../render/holoMaterials';
 import { Stage } from '../render/stage';
 import { loadSettings, saveSettings, type Settings } from '../settings';
 import { HandSet } from '../tracking/handSet';
-import type { RawHand } from '../tracking/trackedHand';
 import { HandTracker, type Delegate } from '../tracking/handTracker';
+import { pickRefound, refindRegion } from '../tracking/refind';
+import type { RawHand } from '../tracking/trackedHand';
 import { DebugOverlay } from '../ui/debugOverlay';
 import { Hud, type HudAction } from '../ui/hud';
 import { LabelLayer, type Rect } from '../ui/labels';
@@ -85,6 +86,8 @@ export class App {
   private sessionStart = performance.now();
   /** Number of video frames run through the tracker so far. */
   framesTracked = 0;
+  /** Hands re-found in zoomed crops since start. */
+  handsRefound = 0;
   /** A manually advanced clock in ms for scripted replays and tests; null means real time. */
   manualClock: number | null = null;
   /** Recent gesture events, newest last (shown in debug mode). */
@@ -210,6 +213,20 @@ export class App {
     this.processHands(raws, this.clock());
   }
 
+  /** Looks again, zoomed in, for tracked hands the full-frame pass lost (see refind.ts). */
+  private refindLost(video: HTMLVideoElement, raws: RawHand[], now: number): void {
+    const lost = this.hands.missing(raws, now, this.vp);
+    if (lost.length === 0) return;
+    const found = this.tracker.refind(video, lost.map((last) => refindRegion(last, now, this.vp)));
+    // Each pick joins `raws`, so the second lost hand can't re-find the first one.
+    lost.forEach((last, i) => {
+      const hand = pickRefound(found[i], last, raws, now, this.vp);
+      if (!hand) return;
+      raws.push(hand);
+      this.handsRefound++;
+    });
+  }
+
   private processHands(raws: RawHand[], now: number): void {
     this.hands.ingest(raws, now, this.vp);
     const events = this.gestures.update(now, this.vp.height);
@@ -229,7 +246,9 @@ export class App {
       const video = this.camera.video;
       if (video.currentTime !== this.lastVideoTime) {
         this.lastVideoTime = video.currentTime;
-        this.processHands(this.tracker.detect(video, now), now);
+        const raws = this.tracker.detect(video, now);
+        if (this.tracker.canRefind) this.refindLost(video, raws, now);
+        this.processHands(raws, now);
         this.trackCount++;
         this.framesTracked++;
       }
@@ -259,6 +278,7 @@ export class App {
       delegate: this.tracker.ready ? this.tracker.delegate : '-',
       video: this.camera.ready ? `${this.camera.video.videoWidth}x${this.camera.video.videoHeight}` : '-',
       objects: this.objects.live.length,
+      refound: this.handsRefound,
       events: this.eventLog.slice(-6),
     });
     requestAnimationFrame(this.loop);

@@ -107,10 +107,11 @@ The workflow in `.github/workflows/deploy.yml` type-checks, tests, builds, and p
 
 ```
 webcam ─► HandTracker (MediaPipe, VIDEO mode, GPU→CPU fallback)
-            │ 21 image + 21 world landmarks per hand
+            │ 21 image + 21 world landmarks per hand; lost hands looked for again, zoomed in
             ▼
          HandSet / TrackedHand
-            One Euro smoothing · metric depth from palm size · 3D reconstruction in camera space
+            identity by continuity · One Euro smoothing · metric depth from palm size
+            3D reconstruction in camera space
             finger curls · pinch / fist / point / open states with hysteresis
             ▼
          GestureEngine ─► events: pinch/fist edges, flick, twist, clap, palms apart, fists pulled apart
@@ -129,6 +130,14 @@ webcam ─► HandTracker (MediaPipe, VIDEO mode, GPU→CPU fallback)
   pinch with the other fingers curled looks like a fist by finger curl alone. Fingertip extension
   (index tip to wrist ÷ palm length) separates them: tucked fists measured 0.72–1.01, pinches 1.1
   and up.
+- **Steady hand identities.** MediaPipe decides "left" or "right" for each detection on its own and
+  now and then gets it wrong for a frame, which would swap your hands mid-gesture. The app keeps
+  each hand's identity by where it just was. It trusts the label only for a hand that is just
+  appearing, or one the classifier keeps calling the other side for several frames.
+- **Hands further away.** The palm detector looks at the whole frame shrunk to 192 px, where a hand
+  a couple of metres away is a few pixels wide. When it loses a hand it was tracking, the app looks
+  again in a zoomed-in crop around where that hand just was. It never searches the frame blindly:
+  in testing, that picked up hand-shaped objects in the background.
 - **Holograms** are procedural three.js geometry: fresnel "glass" shells, additive glowing edges,
   and sprites, rendered into an HDR target with `UnrealBloomPass`. A final pass composites them over
   the mirrored, dimmed or monochrome camera feed in one WebGL canvas. Each object is a set of parts
@@ -141,7 +150,7 @@ webcam ─► HandTracker (MediaPipe, VIDEO mode, GPU→CPU fallback)
 src/
   app/          App orchestration and the InteractionController state machine
   core/         Viewport math (image ↔ screen ↔ camera space), One Euro filter, math helpers
-  tracking/     MediaPipe wrapper, per-hand state, pure feature extraction
+  tracking/     MediaPipe wrapper, hand matching, zoomed re-finding, per-hand state, features
   gestures/     Motion-gesture detectors (pure, unit-tested) and the event engine
   objects/      Explodable hologram framework + Arc Reactor, Boot Thruster, Holo Globe
   render/       Stage (bloom + video composite), materials, hand reticles, occluders, effects
