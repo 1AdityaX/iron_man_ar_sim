@@ -228,7 +228,7 @@ export const THRUSTER: ObjectSpec = {
   kind: 'thruster',
   title: 'BOOT THRUSTER MK-II',
   shortName: 'THRUSTER',
-  menuTitle: 'THRUSTER CONTROL',
+  menuTitle: 'THRUSTER OPS',
   radius: 0.26,
   parts: [nacelle, nose, fan, compressor, combustor, turbine, nozzle],
   restRotation: new THREE.Euler(0.25, -1.15, 0),

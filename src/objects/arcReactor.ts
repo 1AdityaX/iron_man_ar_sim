@@ -225,7 +225,7 @@ export const ARC_REACTOR: ObjectSpec = {
   kind: 'arc-reactor',
   title: 'ARC REACTOR MK-III',
   shortName: 'ARC REACTOR',
-  menuTitle: 'REACTOR CONTROL',
+  menuTitle: 'REACTOR OPS',
   radius: 0.28,
   parts: [conduits, casing, rings, core, coils, plate],
   restRotation: new THREE.Euler(0.28, -0.38, 0),

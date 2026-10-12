@@ -652,7 +652,7 @@ body.live .brand-status .led {
   color: #ffe6c7;
 }
 
-/* ------------------------------------------------------------------ radial menu (legacy, replaced next) */
+/* ------------------------------------------------------------------ ring menu */
 
 .radial-menu {
   position: absolute;
@@ -667,83 +667,116 @@ body.live .brand-status .led {
   display: block;
 }
 
-.rm-ring {
+.rm-svg {
   position: absolute;
   left: 0;
   top: 0;
   overflow: visible;
+  filter: drop-shadow(0 0 4px rgba(102, 207, 255, 0.55));
+}
+
+.rm-bezel {
+  fill: none;
+  stroke: var(--holo-line);
+  stroke-width: 1;
+}
+
+.rm-ticks {
+  stroke: var(--holo);
+  stroke-width: 1.2;
   opacity: 0;
-  transition: opacity 0.25s;
+  transform-origin: 0 0;
+  transition: opacity 0.4s;
+  animation: spin 24s linear infinite;
 }
 
-.radial-menu.open .rm-ring {
+.radial-menu.open .rm-ticks {
+  opacity: 0.7;
+}
+
+.rm-sector {
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transform-origin: 0 0;
+  transform: rotate(-14deg) scale(0.82);
+  transition:
+    transform 0.38s cubic-bezier(0.2, 1.25, 0.4, 1) calc(var(--i) * 32ms),
+    opacity 0.25s calc(var(--i) * 32ms);
+}
+
+.radial-menu.open .rm-sector {
   opacity: 1;
+  transform: none;
 }
 
-.rm-track {
-  fill: none;
+.radial-menu.closing .rm-sector {
+  transition-delay: 0ms;
+}
+
+.rm-sector path {
+  fill: rgba(5, 26, 42, 0.86);
   stroke: var(--holo-line);
+  stroke-width: 1.2;
+  transition:
+    fill 0.12s,
+    stroke 0.12s;
+}
+
+.rm-label {
+  fill: var(--ink);
+  font: 700 12px var(--font-ui);
+  letter-spacing: 0.14em;
+  pointer-events: none;
+}
+
+.rm-label.long {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+}
+
+.radial-menu.open .rm-sector.hover {
+  transform: scale(1.06);
+  transition-delay: 0ms;
+}
+
+.rm-sector.hover path,
+.rm-sector.chosen path {
+  fill: rgba(74, 42, 10, 0.9);
+  stroke: var(--amber);
+  stroke-width: 1.6;
+}
+
+.rm-sector.hover .rm-label,
+.rm-sector.chosen .rm-label {
+  fill: var(--amber-hi);
+}
+
+.rm-hub {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.rm-hub-disc {
+  fill: rgba(3, 15, 26, 0.78);
+  stroke: var(--holo-line);
+  stroke-width: 1;
+}
+
+.rm-hub-dash {
+  fill: none;
+  stroke: var(--holo);
   stroke-width: 1.4;
-}
-
-.rm-track-dash {
-  fill: none;
-  stroke: var(--holo-soft);
-  stroke-dasharray: 3 7;
-}
-
-.rm-core {
-  fill: var(--holo-faint);
-  stroke: var(--holo-line);
+  stroke-dasharray: 2 5;
+  transform-origin: 0 0;
+  animation: spin 9s linear infinite reverse;
 }
 
 .rm-title {
-  position: absolute;
-  left: 0;
-  top: 0;
-  white-space: nowrap;
-  font: 700 14px/1 var(--font-title);
-  letter-spacing: 0.3em;
-  color: var(--ink);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.radial-menu.open .rm-title {
-  opacity: 1;
-}
-
-.rm-option {
-  position: absolute;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: var(--glass);
-  border: 1.5px solid var(--holo-line);
-  color: var(--ink);
-  font: 700 11px/1.15 var(--font-ui);
-  letter-spacing: 0.1em;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  pointer-events: auto;
-  cursor: pointer;
-  transform: scale(0.2);
-  opacity: 0;
-  transition:
-    transform 0.3s cubic-bezier(0.2, 1.5, 0.4, 1),
-    opacity 0.2s;
-}
-
-.radial-menu.open .rm-option {
-  transform: scale(1);
-  opacity: 1;
-}
-
-.radial-menu.open .rm-option.hover {
-  border-color: var(--amber);
-  color: var(--amber-hi);
+  fill: var(--holo-hi);
+  font: 700 9.5px var(--font-title);
+  letter-spacing: 0.2em;
+  pointer-events: none;
 }
 
 /* ------------------------------------------------------------------ start screen */

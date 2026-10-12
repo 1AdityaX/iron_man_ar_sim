@@ -25,7 +25,7 @@ export interface ObjectSpec {
   title: string;
   /** Short name for the spawn menu. */
   shortName: string;
-  /** Context menu title, e.g. "REACTOR CONTROL". */
+  /** Context menu title, e.g. "REACTOR OPS". */
   menuTitle: string;
   /** Assembled bounding radius (object-local units). */
   radius: number;

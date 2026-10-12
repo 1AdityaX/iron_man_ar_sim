@@ -164,7 +164,7 @@ export const GLOBE: ObjectSpec = {
   kind: 'globe',
   title: 'HOLO GLOBE',
   shortName: 'HOLO GLOBE',
-  menuTitle: 'GLOBE CONTROL',
+  menuTitle: 'GLOBE OPS',
   radius: 0.3,
   parts: [orbit, coreP, mantle, crust, atmosphere, moon],
   restRotation: new THREE.Euler(-1.2, 0, 0.35),

@@ -86,7 +86,7 @@ const OBJECT_MENU: MenuOption[] = [
   { id: 'assemble', label: 'ASSEMBLE' },
   { id: 'resetParts', label: 'RESET PARTS' },
   { id: 'reset', label: 'RESET' },
-  { id: 'remove', label: 'REMOVE' },
+  { id: 'remove', label: 'DISMISS' },
   { id: 'close', label: 'CLOSE' },
 ];
 
@@ -356,7 +356,7 @@ export class InteractionController {
   openMenu(owner: string, x: number, y: number, target: HoloObject | null, depth: number): void {
     this.menuTarget = target;
     if (target) this.d.menu.show(target.spec.menuTitle, OBJECT_MENU, x, y, owner, depth);
-    else this.d.menu.show('SPAWN OBJECT', SPAWN_MENU, x, y, owner, depth);
+    else this.d.menu.show('FABRICATE', SPAWN_MENU, x, y, owner, depth);
   }
 
   /** Wired to RadialMenu's onSelect. */
