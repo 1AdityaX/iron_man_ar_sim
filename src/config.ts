@@ -62,6 +62,12 @@ export const CONFIG = {
     pinchHoldMs: 650,
     /** Pinch-hold is cancelled if the pinch drifts further than this fraction of screen height. */
     pinchHoldMoveTolerance: 0.06,
+    /**
+     * The hand that opened a menu steers it only after sliding this far with a firm pinch
+     * (fraction of screen height). A menu pushed off the hand by a screen edge or the gesture
+     * guide would otherwise select whatever option landed under the pinch on release.
+     */
+    menuArmMove: 0.04,
     partInfoHoldMs: 700,
     flickMinSpeed: 1.15, // screen heights per second
     flickEndSpeed: 0.45,

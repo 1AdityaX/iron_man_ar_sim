@@ -39,6 +39,10 @@ interface HandCtl {
   holdStart: number;
   holdFrom: Vec2;
   holdTarget: HoloObject | null;
+  /** True once the pinch has slid away from where it opened the menu (see menuArmMove). */
+  menuArmed: boolean;
+  /** The option this hand's pinch points at; releasing the pinch selects it. */
+  menuPick: string | null;
   drag: PartDrag | null;
   grab: Grab | null;
   fistAngle0: number;
@@ -134,6 +138,8 @@ export class InteractionController {
       holdStart: 0,
       holdFrom: { x: 0, y: 0 },
       holdTarget: null,
+      menuArmed: false,
+      menuPick: null,
       drag: null,
       grab: null,
       fistAngle0: 0,
@@ -211,8 +217,8 @@ export class InteractionController {
 
   private pinchEnd(c: HandCtl): void {
     const menu = this.d.menu;
-    if (c.mode === 'menu' && menu.open && menu.owner === c.key && menu.hovered) {
-      menu.select(menu.hovered);
+    if (c.mode === 'menu' && menu.open && menu.owner === c.key && c.menuPick) {
+      menu.select(c.menuPick);
     } else if (c.mode === 'part' && c.drag) {
       this.endPartDrag(c.drag);
       c.drag = null;
@@ -410,6 +416,9 @@ export class InteractionController {
             const target = c.holdTarget && !c.holdTarget.isRemoving ? c.holdTarget : null;
             this.openMenu(c.key, p.x, p.y, target, this.spawnDepth(h.depth));
             c.mode = 'menu';
+            c.menuArmed = false;
+            c.menuPick = null;
+            c.holdFrom = { x: p.x, y: p.y };
           }
           break;
         }
@@ -417,7 +426,14 @@ export class InteractionController {
           if (!menu.open || menu.owner !== c.key) c.mode = 'idle';
           else {
             handsSteerMenu = true;
-            menuHover = menu.hitTest(p.x, p.y) ?? menuHover;
+            // Steer only while the pinch is firmly closed: opening the fingers moves the pinch
+            // point, and that must not change (or make) the choice the release confirms.
+            if (h.pinchRatio < CONFIG.hand.pinchEnter) {
+              const moved = Math.hypot(p.x - c.holdFrom.x, p.y - c.holdFrom.y);
+              if (moved > CONFIG.gestures.menuArmMove * this.d.vp.height) c.menuArmed = true;
+              if (c.menuArmed) c.menuPick = menu.hitTest(p.x, p.y);
+            }
+            menuHover = c.menuPick ?? menuHover;
           }
           break;
         case 'part':
