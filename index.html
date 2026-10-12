@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#03101a" />
+    <title>Holo-Explorer · Iron Man AR Sim</title>
+    <meta
+      name="description"
+      content="Spawn, move, spin and explode Iron Man style holograms with your bare hands. Webcam hand tracking that runs entirely in your browser."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='25' fill='none' stroke='%2358d3ff' stroke-width='5'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%2358d3ff' stroke-width='3' stroke-dasharray='5 4'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23c9f4ff'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Rajdhani:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="stage"></canvas>
+      <canvas id="debug-layer"></canvas>
+      <svg id="leader-layer" aria-hidden="true"></svg>
+      <div id="label-layer" aria-hidden="true"></div>
+      <div id="menu-layer"></div>
+      <div id="toast" role="status" aria-live="polite"></div>
+
+      <div id="hud-controls">
+        <button type="button" class="hud-btn" data-action="mirror">MIRROR ON</button>
+        <button type="button" class="hud-btn" data-action="depth">DEPTH INVERT ON</button>
+        <button type="button" class="hud-btn" data-action="bw">B&amp;W OFF</button>
+        <button type="button" class="hud-btn" data-action="camera">CAMERA</button>
+        <label class="hud-btn hud-slider">
+          <span>DIM</span>
+          <input type="range" min="0" max="90" step="1" value="40" data-action="dim" aria-label="Dim the camera feed" />
+          <span class="hud-slider-value">40%</span>
+        </label>
+        <button type="button" class="hud-btn hud-more" data-action="more" aria-expanded="false">MORE</button>
+        <div class="hud-extra" hidden>
+          <button type="button" class="hud-btn" data-action="labels">LABELS ON</button>
+          <button type="button" class="hud-btn" data-action="occlusion">OCCLUSION OFF</button>
+          <button type="button" class="hud-btn" data-action="debug">DEBUG OFF</button>
+          <button type="button" class="hud-btn" data-action="help">HELP ON</button>
+          <button type="button" class="hud-btn" data-action="explode">EXPLODE / ASSEMBLE</button>
+        </div>
+      </div>
+
+      <footer id="help">
+        <p class="help-text">
+          PINCH &amp; HOLD (OR DOUBLE-CLICK): SPAWN / MENU · FIST: MOVE · 2 FISTS: SCALE &amp; ROLL · POINT &amp; FLICK A
+          FINGER: SPIN · 2 FISTS PULL APART, PALMS TOGETHER THEN APART, OR TWIST A FIST CCW: EXPLODE · EXPLODED: PINCH A
+          PART TO PULL IT OUT, HOLD IT FOR INFO, CLAP TO ASSEMBLE · E EXPLODE · C CAMERA · B BLACK &amp; WHITE · F MIRROR ·
+          I DEPTH · L LABELS · O OCCLUSION · D DEBUG · H HELP
+        </p>
+        <div class="brand"><b>HOLO-EXPLORER</b><span>IRON MAN AR SIM</span></div>
+      </footer>
+
+      <section id="start-screen">
+        <div class="start-card">
+          <div class="start-emblem" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
+          <h1>HOLO-EXPLORER</h1>
+          <p class="start-sub">IRON MAN AR SIM</p>
+          <p class="start-lede">Spawn, grab, spin and explode holograms with your bare hands.</p>
+          <div class="start-actions">
+            <button type="button" id="btn-start" class="start-primary">INITIALIZE</button>
+            <button type="button" id="btn-demo" class="start-secondary">MOUSE DEMO</button>
+          </div>
+          <p id="start-status" class="start-status">BOOTING</p>
+          <p class="start-note">
+            Needs a webcam and good light. Hand tracking runs locally in your browser; your video never leaves this
+            device.
+          </p>
+        </div>
+      </section>
+    </div>
+    <video id="camera" playsinline muted></video>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
