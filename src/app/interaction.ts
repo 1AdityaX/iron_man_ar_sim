@@ -514,9 +514,13 @@ export class InteractionController {
     drags.forEach((drag, i) => {
       if (!drag || this.now - drag.start < CONFIG.gestures.partInfoHoldMs) return;
       const pc = this.d.objects.partCircle(drag.hit.obj, drag.hit.part, { x: 0, y: 0, r: 0, depth: 0 });
+      // Like the hologram callouts: lead off the part's outer edge and keep off the part.
+      const dir = pc.x < W / 2 ? -1 : 1;
+      const inset = pc.r * 0.8;
       layer.put({
         key: `info-${i}`,
-        anchor: { x: pc.x, y: pc.y },
+        anchor: { x: pc.x + dir * pc.r * 0.62, y: pc.y - pc.r * 0.62 },
+        avoid: { x: pc.x - inset, y: pc.y - inset, w: inset * 2, h: inset * 2 },
         title: drag.hit.part.name,
         rows: drag.hit.part.spec.info,
         variant: 'info',
