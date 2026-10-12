@@ -114,6 +114,7 @@ export class App {
       document.getElementById('leader-layer') as unknown as SVGSVGElement,
     );
     this.menu = new RadialMenu(document.getElementById('menu-layer')!, (id) => this.ctl.onMenuSelect(id));
+    this.menu.avoid = () => this.hud.controlsRect;
     this.debug = new DebugOverlay(document.getElementById('debug-layer') as HTMLCanvasElement);
     this.start = new StartScreen(
       () => void this.startCamera(),

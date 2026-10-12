@@ -21,6 +21,8 @@ export class RadialMenu {
   /** Depth (metres) of the hand that opened it; spawned objects appear there. */
   depth = 0.7;
   hovered: string | null = null;
+  /** Screen rectangle the menu must not cover (the HUD control stack). */
+  avoid: (() => DOMRect | null) | null = null;
 
   private readonly el: HTMLDivElement;
   private readonly title: HTMLDivElement;
@@ -53,6 +55,14 @@ export class RadialMenu {
     const reach = this.radius + this.optionRadius + 12;
     this.x = clamp(x, reach, window.innerWidth - reach);
     this.y = clamp(y, reach + 46, window.innerHeight - reach);
+    const r = this.avoid?.();
+    if (r && this.x + reach > r.left - 8 && this.y - reach - 46 < r.bottom + 8) {
+      // Slide clear of the control stack, whichever way is the shorter move.
+      const down = r.bottom + 8 - (this.y - reach - 46);
+      const left = this.x + reach - (r.left - 8);
+      if (down <= left && this.y + down <= window.innerHeight - reach) this.y += down;
+      else this.x = Math.max(reach, this.x - left);
+    }
     this.owner = owner;
     this.depth = depth;
     this.hovered = null;

@@ -18,7 +18,7 @@ export class Fx {
 
   /** Expanding ring that faces the camera. */
   shockwave(pos: THREE.Vector3, color: THREE.Color, maxRadius: number, life = 0.8, delay = 0, width = 0.035): void {
-    const ring = makeRing({ radius: 1, width, color, intensity: 2.6, glow: 1.4 });
+    const ring = makeRing({ radius: 1, width, color, intensity: 1.8, glow: 0.8 });
     const mat = ring.material as RingMaterial;
     const base = ring.scale.x;
     ring.position.copy(pos);
@@ -31,7 +31,7 @@ export class Fx {
 
   /** Ring that collapses inward (used when parts snap back together). */
   implode(pos: THREE.Vector3, color: THREE.Color, radius: number, life = 0.55): void {
-    const ring = makeRing({ radius: 1, width: 0.04, color, intensity: 2.2 });
+    const ring = makeRing({ radius: 1, width: 0.025, color, intensity: 1.3, glow: 0.6 });
     const mat = ring.material as RingMaterial;
     const base = ring.scale.x;
     ring.position.copy(pos);
@@ -78,8 +78,8 @@ export class Fx {
     });
   }
 
-  flash(pos: THREE.Vector3, color: THREE.Color, size: number, life = 0.35): void {
-    const sprite = makeGlow(size, color, 2.5);
+  flash(pos: THREE.Vector3, color: THREE.Color, size: number, life = 0.35, intensity = 1.6): void {
+    const sprite = makeGlow(size, color, intensity);
     sprite.position.copy(pos);
     this.add(sprite, life, 0, (t) => {
       sprite.scale.setScalar(size * (0.6 + t * 0.8));
@@ -89,9 +89,9 @@ export class Fx {
 
   /** The big gold clap shockwave. */
   clap(pos: THREE.Vector3): void {
-    this.flash(pos, PALETTE.gold, 0.25, 0.4);
-    this.shockwave(pos, PALETTE.gold, 0.9, 0.9, 0, 0.05);
-    this.shockwave(pos, PALETTE.gold, 0.55, 0.8, 0.08, 0.03);
+    this.flash(pos, PALETTE.gold, 0.16, 0.35, 1.2);
+    this.shockwave(pos, PALETTE.gold, 0.8, 0.85, 0, 0.022);
+    this.shockwave(pos, PALETTE.gold, 0.5, 0.75, 0.08, 0.016);
   }
 
   update(dt: number): void {

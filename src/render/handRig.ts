@@ -61,33 +61,34 @@ export class HandRig {
   private readonly tmp = new THREE.Vector3();
 
   constructor(readonly hand: TrackedHand) {
-    this.palmRing = makeRing({ radius: 1, width: 0.045, intensity: 1.9, glow: 1.2 });
-    this.palmArc = makeRing({ radius: 0.74, width: 0.035, intensity: 1.6, arcLength: TAU * 0.68 });
-    this.palmTicks = makeRing({ radius: 1.12, width: 0.03, intensity: 1.1, dashes: 36, duty: 0.35, opacity: 0.45, glow: 0 });
-    this.palmNode = makeGlow(0.24, PALETTE.ice, 2.2);
+    this.palmRing = makeRing({ radius: 1, width: 0.05, intensity: 1.35, glow: 0.6 });
+    this.palmArc = makeRing({ radius: 0.74, width: 0.04, intensity: 1.15, glow: 0.5, arcLength: TAU * 0.68 });
+    this.palmTicks = makeRing({ radius: 1.13, width: 0.035, intensity: 0.9, dashes: 36, duty: 0.35, opacity: 0.45, glow: 0 });
+    this.palmNode = makeGlow(0.26, PALETTE.ice, 1.6);
     this.palm.add(this.palmRing, this.palmArc, this.palmTicks, this.palmNode);
 
-    this.wristRing = makeRing({ radius: 1, width: 0.06, intensity: 1.8, glow: 1.1 });
-    this.wristArc = makeRing({ radius: 1.3, width: 0.05, intensity: 1.4, arcLength: TAU * 0.55, opacity: 0.8 });
-    this.wristDot = makeGlow(0.5, PALETTE.ice, 2);
+    this.wristRing = makeRing({ radius: 1, width: 0.065, intensity: 1.3, glow: 0.6 });
+    this.wristArc = makeRing({ radius: 1.3, width: 0.055, intensity: 1.0, glow: 0.5, arcLength: TAU * 0.55, opacity: 0.8 });
+    this.wristDot = makeGlow(0.5, PALETTE.ice, 1.5);
     this.wrist.add(this.wristRing, this.wristArc, this.wristDot);
 
-    this.indexDot = makeGlow(0.022, PALETTE.ice, 2.2);
-    this.thumbDot = makeGlow(0.016, PALETTE.ice, 1.8);
+    this.indexDot = makeGlow(0.02, PALETTE.ice, 1.6);
+    this.thumbDot = makeGlow(0.015, PALETTE.ice, 1.4);
 
-    this.pinchRing = makeRing({ radius: 1, width: 0.12, intensity: 1.9 });
+    this.pinchRing = makeRing({ radius: 1, width: 0.12, intensity: 1.5, glow: 0.7 });
     this.pinchProgress = makeRing({
       radius: 1.45,
       width: 0.22,
       color: PALETTE.gold,
-      intensity: 2.4,
+      intensity: 1.7,
+      glow: 0.7,
       arcStart: Math.PI / 2,
       arcLength: 0,
     });
     this.pinch.add(this.pinchRing, this.pinchProgress);
 
     this.fistGlow = makeGlow(0.12, PALETTE.red, 1.8, 0);
-    this.reticle = makeRing({ radius: 1, width: 0.12, intensity: 1.8, dashes: 8, duty: 0.55 });
+    this.reticle = makeRing({ radius: 1, width: 0.12, intensity: 1.4, dashes: 8, duty: 0.55 });
     this.pointer.add(this.reticle);
 
     this.group.add(this.palm, this.wrist, this.indexDot, this.thumbDot, this.pinch, this.fistGlow, this.pointer);
@@ -119,7 +120,7 @@ export class HandRig {
     this.basis.makeBasis(this.x, this.y, h.palmNormal);
     this.q.setFromRotationMatrix(this.basis);
     this.palm.quaternion.slerp(this.q, k);
-    this.palm.scale.setScalar(0.072 * scale);
+    this.palm.scale.setScalar(0.05 * scale);
     (this.palmArc.material as RingMaterial).arcStart = time * 1.6;
     (this.palmTicks.material as RingMaterial).arcStart = -time * 0.4;
     const nodeAngle = time * 0.9 + (h.side === 'Left' ? 0 : Math.PI);
@@ -129,7 +130,7 @@ export class HandRig {
     this.wrist.position.lerp(h.points[LM.WRIST], k);
     this.q.setFromUnitVectors(Z, h.handDir);
     this.wrist.quaternion.slerp(this.q, k);
-    this.wrist.scale.setScalar(0.04 * scale);
+    this.wrist.scale.setScalar(0.036 * scale);
     (this.wristArc.material as RingMaterial).arcStart = -time * 1.1;
 
     this.indexDot.position.lerp(h.points[LM.INDEX_TIP], k);

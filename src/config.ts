@@ -101,10 +101,10 @@ export const CONFIG = {
   },
 
   render: {
-    maxPixelRatio: 2,
+    maxPixelRatio: 1.5,
     bloomStrength: 0.8,
     bloomRadius: 0.45,
-    bloomThreshold: 0.16,
+    bloomThreshold: 0.24,
   },
 } as const;
 

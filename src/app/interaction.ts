@@ -269,10 +269,17 @@ export class InteractionController {
     const target = t?.obj ?? this.d.objects.nearest(x, y, 280) ?? this.soleObject();
     if (!target || target.exploded) return;
     if (t && t.obj === target) {
-      // The rip also stretched the two-hand scale; undo that before exploding.
+      // The rip also stretched the two-hand scale; undo that, and let go so the fists that keep
+      // moving apart don't go on scaling the exploded hologram.
       const before = t.scaleLog.find((e) => now - e.t <= CONFIG.gestures.pullApartWindowMs + 100);
       target.scale = before?.s ?? t.scale0;
-      this.beginTwoHand(target);
+      this.twoHand = null;
+      for (const c of this.ctls) {
+        if (c.grab?.obj !== target) continue;
+        c.grab = null;
+        c.mode = 'idle';
+        target.grabCount = Math.max(0, target.grabCount - 1);
+      }
     }
     this.explode(target);
   }
@@ -307,7 +314,7 @@ export class InteractionController {
   explode(obj: HoloObject): boolean {
     if (!obj.explode()) return false;
     obj.root.getWorldPosition(this.v);
-    this.d.fx.shockwave(this.v, PALETTE.cyan, obj.worldRadius * 2.2, 0.7);
+    this.d.fx.shockwave(this.v, PALETTE.cyan, obj.worldRadius * 1.5, 0.6);
     this.d.fx.burst(this.v, PALETTE.cyan, 40, 0.35, 0.8);
     this.focus = obj;
     return true;
@@ -318,7 +325,7 @@ export class InteractionController {
     if (this.mouse.drag?.hit.obj === obj) this.mouseUp();
     if (!obj.assemble()) return false;
     obj.root.getWorldPosition(this.v);
-    this.d.fx.implode(this.v, PALETTE.gold, obj.worldRadius * 1.6);
+    this.d.fx.implode(this.v, PALETTE.gold, Math.min(0.5, obj.worldRadius * 1.4));
     this.focus = obj;
     return true;
   }

@@ -66,6 +66,10 @@ export class Hud {
     this.toastTimer = window.setTimeout(() => this.toastEl.classList.remove('show'), 1400);
   }
 
+  get controlsRect(): DOMRect {
+    return this.controls.getBoundingClientRect();
+  }
+
   /** Screen y below which right-docked labels may go without covering the controls. */
   get controlsBottom(): number {
     return this.controls.getBoundingClientRect().bottom;
