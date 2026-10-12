@@ -146,7 +146,7 @@ export class App {
   boot(): void {
     this.trackerLoad = this.tracker.init((msg) => this.start.setStatus(msg), this.opts.delegate).catch((err: unknown) => {
       console.error('[tracker]', err);
-      this.start.setStatus('HAND TRACKING FAILED TO LOAD. CHECK YOUR CONNECTION, OR TRY THE MOUSE DEMO.', true);
+      this.start.setStatus('HAND TRACKING FAILED TO LOAD. CHECK YOUR CONNECTION, OR USE MOUSE MODE.', true);
     });
     if (this.opts.autostart) void this.startCamera();
   }
@@ -161,7 +161,7 @@ export class App {
       this.persist();
     } catch (err) {
       const msg = err instanceof CameraError ? err.message : 'Could not start the camera.';
-      this.start.setStatus(`${msg.toUpperCase()} YOU CAN STILL TRY THE MOUSE DEMO.`, true);
+      this.start.setStatus(`${msg.toUpperCase()} YOU CAN STILL USE MOUSE MODE.`, true);
       this.start.setBusy(false);
       if (this.mode) this.hud.toast(msg.toUpperCase());
       return;

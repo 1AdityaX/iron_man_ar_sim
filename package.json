@@ -2,7 +2,7 @@
   "name": "iron-man-ar-sim",
   "private": true,
   "version": "1.0.0",
-  "description": "Holo-Explorer: Iron Man style AR holograms you control with your bare hands through a webcam.",
+  "description": "Holo Workshop: Iron Man style workshop holograms you control with your bare hands through a webcam.",
   "type": "module",
   "scripts": {
     "setup-assets": "node scripts/setup-assets.mjs",

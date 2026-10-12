@@ -24,7 +24,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cameraId: null,
 };
 
-const KEY = 'holo-explorer:settings:v1';
+const KEY = 'holo-workshop:settings:v1';
 
 /** Settings persist per browser; storage can be unavailable (private mode), which is fine. */
 export function loadSettings(): Settings {

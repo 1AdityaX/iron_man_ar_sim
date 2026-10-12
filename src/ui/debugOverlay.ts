@@ -41,7 +41,7 @@ export class DebugOverlay {
     }
     this.wasOn = true;
     ctx.clearRect(0, 0, this.width, this.height);
-    ctx.font = '600 11px "JetBrains Mono", ui-monospace, monospace';
+    ctx.font = '12px "Share Tech Mono", ui-monospace, monospace';
     ctx.textBaseline = 'top';
 
     for (const h of hands) {
