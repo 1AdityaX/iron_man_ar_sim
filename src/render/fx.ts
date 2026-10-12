@@ -17,8 +17,17 @@ export class Fx {
   private readonly effects: Effect[] = [];
 
   /** Expanding ring that faces the camera. */
-  shockwave(pos: THREE.Vector3, color: THREE.Color, maxRadius: number, life = 0.8, delay = 0, width = 0.035): void {
-    const ring = makeRing({ radius: 1, width, color, intensity: 1.8, glow: 0.8 });
+  shockwave(
+    pos: THREE.Vector3,
+    color: THREE.Color,
+    maxRadius: number,
+    life = 0.8,
+    delay = 0,
+    width = 0.035,
+    intensity = 1.8,
+    glow = 0.8,
+  ): void {
+    const ring = makeRing({ radius: 1, width, color, intensity, glow });
     const mat = ring.material as RingMaterial;
     const base = ring.scale.x;
     ring.position.copy(pos);
@@ -87,11 +96,13 @@ export class Fx {
     }, () => sprite.material.dispose());
   }
 
-  /** The amber clap shockwave. */
+  /**
+   * The clap: two thin amber rings from between the hands. No flash and only a faint halo,
+   * because amber added over the cyan parts reads as white and clapping is frequent.
+   */
   clap(pos: THREE.Vector3): void {
-    this.flash(pos, PALETTE.amber, 0.16, 0.35, 1.2);
-    this.shockwave(pos, PALETTE.amber, 0.8, 0.85, 0, 0.022);
-    this.shockwave(pos, PALETTE.amber, 0.5, 0.75, 0.08, 0.016);
+    this.shockwave(pos, PALETTE.amber, 0.3, 0.65, 0, 0.02, 1.1, 0.3);
+    this.shockwave(pos, PALETTE.amber, 0.18, 0.55, 0.08, 0.02, 0.9, 0.3);
   }
 
   update(dt: number): void {
